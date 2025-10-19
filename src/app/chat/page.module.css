@@ -1,0 +1,217 @@
+:root {
+  --bg: #eef2f6;
+  --panel: #f7f9fc;
+  --border: #e2e6ee;
+  --text: #222;
+  --muted: #7a8491;
+  --green: #06c755;
+}
+
+/* ===== 全体レイアウト（上：ヘッダー／下：本体） ===== */
+.wrap {
+  display: grid;
+  grid-template-rows: 64px 1fr;
+  height: 100svh;
+  background: var(--panel);
+  font-size: 16px;
+}
+
+/* ヘッダー */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.title { font-weight: 700; font-size: 18px; }
+
+/* ヘッダー右側アクション */
+.headerActions { margin-left: auto; display: flex; gap: 8px; }
+.endBtn {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  transition: filter .15s ease, transform .05s ease, box-shadow .15s ease;
+}
+.endBtn:hover { filter: brightness(1.05); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+.endBtn:active { transform: translateY(1px); }
+.endBtn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ===== 本体：上下2段（上：チャット欄／下：入力欄） ===== */
+.contentSingle { height: 100%; width: 100%; margin: 0; padding: 0; box-sizing: border-box; }
+
+.main {
+  display: grid;
+  grid-template-rows: 1fr auto;   /* 上がスクロール領域／下が入力欄 */
+  height: 100%;
+  background: #f7f9fc;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+/* チャット欄（ここだけスクロール） */
+.list {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain; /* スクロールが親に抜けない */
+  padding: 16px 20px 24px;
+  background: var(--bg);
+}
+/* スクロールバー見やすく */
+.list::-webkit-scrollbar { width: 10px; }
+.list::-webkit-scrollbar-thumb { background: #c9d1dd; border-radius: 8px; border: 2px solid var(--bg); }
+.list::-webkit-scrollbar-track { background: var(--bg); }
+
+/* 初期（メッセージ0件）→ 中央にガイドを表示 */
+.listEmpty { display: flex; align-items: center; justify-content: center; }
+.empty { color: #8b95a1; text-align: center; font-size: 14px; }
+
+/* 1メッセージ行 */
+.row { display: flex; gap: 10px; margin: 10px 0; align-items: flex-end; }
+.ai  { justify-content: flex-start; }
+.me  { justify-content: flex-end; }
+
+/* 行内アバター */
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #fff; border: 1px solid var(--border);
+  flex: 0 0 32px;
+}
+.avatar svg { fill: none; stroke: #7a8491; stroke-width: 1.7; }
+
+/* 入力欄の自分アイコン */
+.myIcon {
+  width: 36px; height: 36px; border-radius: 50%;
+  object-fit: cover; border: 1px solid #e1e4ea;
+}
+
+/* 吹き出し */
+.bubble {
+  max-width: 60%;
+  padding: 10px 12px;
+  border-radius: 16px;
+  line-height: 1.55;
+  word-break: break-word;
+  box-shadow: 0 1px 0 rgba(0,0,0,.03);
+  position: relative;
+}
+.aiBubble { background: #fff; border: 1px solid var(--border); border-top-left-radius: 6px; }
+.meBubble { background: var(--green); color: #fff; border-top-right-radius: 6px; }
+.text { white-space: pre-wrap; font-size: 15px; }
+
+/* メタ情報（時刻・既読） */
+.meta { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; font-size: 12px; opacity: .8; }
+.aiMeta { color: var(--muted); }
+.meMeta { color: #e9fff0; }
+.time{} .read{ letter-spacing: .05em; }
+
+/* 入力コンポーザー（常に最下部） */
+.composer {
+  display: grid;
+  grid-template-columns: 40px 1fr 46px; /* 左:自分アイコン / 中:入力 / 右:送信 */
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border-top: 1px solid var(--border);
+}
+.textarea {
+  width: 100%;
+  min-height: 42px; max-height: 160px;
+  resize: none;
+  border: 1px solid #d9deea;
+  border-radius: 18px;
+  padding: 12px 14px;
+  font-size: 16px;
+  line-height: 1.45;
+  outline: none;
+  background: #fff;
+  color: var(--text);
+}
+.textarea::placeholder { color: #9aa4b2; }
+.textarea:focus { border-color: #9db5ff; box-shadow: 0 0 0 3px rgba(157,181,255,.25); }
+
+.iconBtn {
+  border: 1px solid #d9deea; background: #fff; border-radius: 50%;
+  width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer;
+  transition: background .15s ease, transform .05s ease, box-shadow .15s ease;
+}
+.iconBtn:hover { background: #f1f4f9; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.iconBtn:active { transform: translateY(1px); }
+.iconBtn svg { fill: none; stroke: currentColor; stroke-width: 2; }
+.send { background: var(--green); border-color: var(--green); color: #fff; }
+.send:hover { filter: brightness(1.05); }
+.send:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ===== モーダル ===== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.38);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+}
+.modalCard {
+  width: min(520px, 92vw);
+  background: #fff;
+  border: 1px solid #e2e6ee;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 16px 32px rgba(0,0,0,.12);
+}
+.modalTitle { margin: 0 0 8px; font-size: 18px; font-weight: 700; }
+.modalBody  { margin: 0 0 16px; color: #475569; line-height: 1.6; }
+.modalActions { display: flex; justify-content: flex-end; gap: 10px; }
+.btnGhost {
+  border: 1px solid #d9deea; background: #fff; color: #111827;
+  padding: 8px 14px; border-radius: 8px; cursor: pointer;
+}
+.btnGhost:hover { background: #f8fafc; }
+.btnGhost:disabled { opacity: .6; cursor: not-allowed; }
+.btnPrimary {
+  border: 1px solid #2563eb; background: #2563eb; color: #fff;
+  padding: 8px 14px; border-radius: 8px; cursor: pointer;
+}
+.btnPrimary:hover { filter: brightness(1.05); }
+.btnPrimary:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ===== トースト（右下） ===== */
+.toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 420px;
+  background: #fff;
+  border: 1px solid #e2e6ee;
+  border-left-width: 6px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.12);
+}
+.toast_info    { border-left-color: #3b82f6; }
+.toast_success { border-left-color: #16a34a; }
+.toast_error   { border-left-color: #ef4444; }
+.toastMsg { color: #111827; line-height: 1.5; }
+.toastClose {
+  margin-left: auto; border: none; background: transparent;
+  font-size: 18px; line-height: 1; color: #64748b; cursor: pointer;
+}
+.toastClose:hover { color: #0f172a; }
+
+/* 保険（狭幅時） */
+@media (max-width: 960px) {
+  .contentSingle { max-width: 100%; }
+}

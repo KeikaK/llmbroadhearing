@@ -34,3 +34,43 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+
+構築手順
+---
+
+## 1) Next.js プロジェクトを作成
+
+```powershell
+npx create-next-app@latest LLMBroadHearing
+cd LLMBroadHearing
+npm run dev
+```
+
+* ブラウザで `http://localhost:3000` を開いて初期画面が出れば成功。
+* （プロンプトで聞かれたら）**TypeScript: Yes** / **App Router: Yes** / **ESLint: Yes** / **Tailwind: 任意** / **src dir: No でも Yes でも可** / **Experimental: 任意** でOK。
+
+---
+
+## 2) LangChain と OpenAI 連携を追加
+
+### パッケージ導入
+
+```powershell
+npm i langchain @langchain/openai
+
+### 環境変数を設定
+
+プロジェクト直下に **`.env.local`** を作成:
+
+```env
+OPENAI_API_KEY=あなたのOpenAIAPIキー
+```
+
+> Gitへはコミットしないこと（.env* は既に .gitignore 済）。
+
+
+
+
