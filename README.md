@@ -63,7 +63,7 @@ npm i langchain @langchain/openai
 
 ### 環境変数を設定
 
-プロジェクト直下に **`.env.local`** を作成:
+プロジェクト直下に **`.env.local`** ファイルを作成:
 
 ```env
 OPENAI_API_KEY=あなたのOpenAIAPIキー
