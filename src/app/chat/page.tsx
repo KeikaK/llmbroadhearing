@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
-type Msg = { role: "user" | "assistant"; content: string; at?: string };
+type Msg = { id: string; role: "user" | "assistant"; content: string; at: string }; // id を追加して識別、at は表示用時刻
 
 function Toast({
   open,
@@ -115,11 +115,17 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  // 時:分:秒 形式の時刻文字列を返す（人間側・AI側ともにこれを使用）
   const now = () =>
-    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
 
   const sendImpl = async (text: string) => {
-    const userMsg: Msg = { role: "user", content: text.trim(), at: now() };
+    const userMsg: Msg = { id: String(Date.now()) , role: "user", content: text.trim(), at: now() };
     const next = [...messages, userMsg];
     setMessages(next);
     setLoading(true);
@@ -129,16 +135,45 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next }),
       });
-      const data = await res.json();
-      const reply = (data?.reply ?? data?.error ?? "（応答なし）").toString();
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: reply, at: now() },
-      ]);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText);
+      }
+
+      // ストリーミング対応：body があれば逐次読み出して追記
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        const assistantId = String(Date.now());
+        // 先に空のアシスタント吹き出しを追加（at は空にして、完了時に時刻を入れる）
+        setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", at: "" }]);
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          // 最新のアシスタントメッセージに追記
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
+          );
+        }
+        // ストリーミング完了時にそのメッセージの時刻を現在時刻（時:分:秒）に更新
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, at: now() } : m))
+        );
+      } else {
+        // 非ストリーミングの場合は従来の JSON を待って一括表示
+        const data = await res.json();
+        const reply = (data?.reply ?? data?.error ?? "（応答なし）").toString();
+        setMessages((prev) => [
+          ...prev,
+          { id: String(Date.now()), role: "assistant", content: reply, at: now() },
+        ]);
+      }
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
         {
+          id: String(Date.now()),
           role: "assistant",
           content: `Error: ${err?.message ?? String(err)}`,
           at: now(),
@@ -230,6 +265,65 @@ export default function ChatPage() {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    // ページ表示後に一度だけ API を呼ぶ（ストリーミング対応）
+    const runOnMount = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: [] }),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt);
+        }
+        if (res.body) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          const assistantId = String(Date.now());
+          setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", at: "" }]);
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
+            );
+          }
+          // ストリーミング完了で時刻を入れる
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, at: now() } : m))
+          );
+        } else {
+          const text = await res.text();
+          let reply = text;
+          try {
+            const ct = (res.headers.get("content-type") || "").toLowerCase();
+            if (ct.includes("application/json")) {
+              const data = JSON.parse(text);
+              reply = (data?.reply ?? data?.error ?? text).toString();
+            }
+          } catch {
+            reply = text;
+          }
+          setMessages((prev) => [...prev, { id: String(Date.now()), role: "assistant", content: reply, at: now() }]);
+        }
+      } catch (err: any) {
+        setMessages((prev) => [
+          ...prev,
+          { id: String(Date.now()), role: "assistant", content: `Error: ${err?.message ?? String(err)}`, at: now() },
+        ]);
+        console.error("初期AI呼び出し失敗:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    runOnMount();
+  }, []);
 
   return (
     <div className={styles.wrap}>
