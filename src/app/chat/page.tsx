@@ -104,6 +104,9 @@ export default function ChatPage() {
     msg: string;
   }>({ open: false, type: "info", msg: "" });
 
+  // 現在「スピナーを表示中」のアシスタントメッセージ id
+  const [streamingAt, setStreamingAt] = useState<string | null>(null);
+  
   const listRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLFormElement>(null);
@@ -125,28 +128,33 @@ export default function ChatPage() {
     });
 
   const sendImpl = async (text: string) => {
-    const userMsg: Msg = { id: String(Date.now()) , role: "user", content: text.trim(), at: now() };
-    const next = [...messages, userMsg];
-    setMessages(next);
+    const userMsg: Msg = { id: String(Date.now()), role: "user", content: text.trim(), at: now() };
+    // プレースホルダ用のアシスタントIDを先に作り、送信直後に空吹き出しとスピナーを表示する
+    const assistantId = String(Date.now() + Math.floor(Math.random() * 1000));
+    const assistantPlaceholder: Msg = { id: assistantId, role: "assistant", content: "", at: "" };
+    // クライアント表示用はユーザ→プレースホルダの順で追加
+    setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
+    // API へ送る履歴にはプレースホルダを含めない（空の assistant が送られるのを防ぐ）
+    const messagesForApi = [...messages, userMsg];
+    setStreamingAt(assistantId); // スピナー表示開始
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: messagesForApi }),
       });
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(errText);
       }
-
+ 
       // ストリーミング対応：body があれば逐次読み出して追記
       if (res.body) {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        const assistantId = String(Date.now());
-        // 先に空のアシスタント吹き出しを追加（at は空にして、完了時に時刻を入れる）
-        setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", at: "" }]);
+        // 最初の到着チャンクを検知するためのフラグ
+        let firstChunk = true;
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
@@ -155,30 +163,36 @@ export default function ChatPage() {
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
           );
+          // 最初の文字が来たらスピナーを消す（人間の返信直後～AI一文字目表示までに spinner）
+          if (firstChunk) {
+            setStreamingAt(null);
+            firstChunk = false;
+          }
         }
         // ストリーミング完了時にそのメッセージの時刻を現在時刻（時:分:秒）に更新
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantId ? { ...m, at: now() } : m))
         );
+        setStreamingAt(null);
       } else {
-        // 非ストリーミングの場合は従来の JSON を待って一括表示
+        // 非ストリーミングの場合はプレースホルダを更新してスピナーを消す
         const data = await res.json();
         const reply = (data?.reply ?? data?.error ?? "（応答なし）").toString();
-        setMessages((prev) => [
-          ...prev,
-          { id: String(Date.now()), role: "assistant", content: reply, at: now() },
-        ]);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content: reply, at: now() } : m))
+        );
+        setStreamingAt(null);
       }
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          role: "assistant",
-          content: `Error: ${err?.message ?? String(err)}`,
-          at: now(),
-        },
-      ]);
+      // エラー時は既存プレースホルダをエラーメッセージへ置換してスピナーを消す
+      setStreamingAt(null);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, content: `Error: ${err?.message ?? String(err)}`, at: now() }
+            : m
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -274,10 +288,15 @@ export default function ChatPage() {
       (window as any).__chat_init_called = true;
     }
 
-    // ページ表示後に一度だけ API を呼ぶ（ストリーミング対応）
+    // ページ表示後に一度だけ API を呼ぶ（ストリーミング対応）。初期表示でも spinner を出す
     const runOnMount = async () => {
       try {
         setLoading(true);
+        // プレースホルダを先に追加して spinner を表示
+        const assistantId = String(Date.now() + Math.floor(Math.random() * 1000));
+        setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", at: "" }]);
+        setStreamingAt(assistantId);
+
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -290,8 +309,7 @@ export default function ChatPage() {
         if (res.body) {
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
-          const assistantId = String(Date.now());
-          setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", at: "" }]);
+          let firstChunk = true;
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
@@ -299,10 +317,15 @@ export default function ChatPage() {
             setMessages((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
             );
+            if (firstChunk) {
+              setStreamingAt(null);
+              firstChunk = false;
+            }
           }
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantId ? { ...m, at: now() } : m))
           );
+          setStreamingAt(null);
         } else {
           const text = await res.text();
           let reply = text;
@@ -315,13 +338,18 @@ export default function ChatPage() {
           } catch {
             reply = text;
           }
-          setMessages((prev) => [...prev, { id: String(Date.now()), role: "assistant", content: reply, at: now() }]);
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: reply, at: now() } : m))
+          );
+          setStreamingAt(null);
         }
       } catch (err: any) {
-        setMessages((prev) => [
-          ...prev,
-          { id: String(Date.now()), role: "assistant", content: `Error: ${err?.message ?? String(err)}`, at: now() },
-        ]);
+        setStreamingAt(null);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.content === "" ? { ...m, content: `Error: ${err?.message ?? String(err)}`, at: now() } : m
+          )
+        );
         console.error("初期AI呼び出し失敗:", err);
       } finally {
         setLoading(false);
@@ -365,11 +393,11 @@ export default function ChatPage() {
         {messages.length === 0 ? (
           <div className={styles.empty}>メッセージを入力して開始してください。</div>
         ) : (
-          messages.map((m, i) => {
-            const mine = m.role === "user";
-            return (
+          messages.map((m) => {
+           const mine = m.role === "user";
+           return (
               <div
-                key={i}
+                key={m.id} /* 修正：インデックスではなく id をキーにする */
                 className={`${styles.row} ${mine ? styles.me : styles.ai}`}
               >
                 {!mine && (
@@ -383,6 +411,10 @@ export default function ChatPage() {
                   }`}
                 >
                   <div className={styles.text}>{m.content}</div>
+                  {/* streamingAt と一致するメッセージ（＝まだAIの最初の文字が来ていない吹き出し）にスピナーを表示 */}
+                  {!mine && m.id === streamingAt && (
+                    <span className={styles.spinner} aria-hidden="true" />
+                  )}
                   <div
                     className={`${styles.meta} ${
                       mine ? styles.meMeta : styles.aiMeta
