@@ -281,13 +281,20 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    // Strict Mode で useEffect が二回実行される開発環境対策：
-    // window.__chat_init_called をグローバルに立てて二重実行を防ぐ
+    // 開発時の React.StrictMode による「短時間での副作用二重実行」を防ぐため、
+    // 最終実行時刻をグローバルに記録し、短時間内の重複実行はスキップする。
     if (typeof window !== "undefined") {
-      if ((window as any).__chat_init_called) return;
-      (window as any).__chat_init_called = true;
+      const last = (window as any).__chat_init_last ?? 0;
+      const nowTs = Date.now();
+      const SKIP_MS = 1000; // このウィンドウ内での重複実行を何ms以内ならスキップするか
+      if (nowTs - last < SKIP_MS) {
+        // 短時間の重複（Strict Mode の副作用）とみなして実行をスキップ
+        return;
+      }
+      // 実行する場合は時刻を記録
+      (window as any).__chat_init_last = nowTs;
     }
-
+ 
     // ページ表示後に一度だけ API を呼ぶ（ストリーミング対応）。初期表示でも spinner を出す
     const runOnMount = async () => {
       try {
