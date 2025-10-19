@@ -267,6 +267,13 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
+    // Strict Mode で useEffect が二回実行される開発環境対策：
+    // window.__chat_init_called をグローバルに立てて二重実行を防ぐ
+    if (typeof window !== "undefined") {
+      if ((window as any).__chat_init_called) return;
+      (window as any).__chat_init_called = true;
+    }
+
     // ページ表示後に一度だけ API を呼ぶ（ストリーミング対応）
     const runOnMount = async () => {
       try {
@@ -293,7 +300,6 @@ export default function ChatPage() {
               prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
             );
           }
-          // ストリーミング完了で時刻を入れる
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantId ? { ...m, at: now() } : m))
           );
