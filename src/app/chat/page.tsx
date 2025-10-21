@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
 
 type Msg = { id: string; role: "user" | "assistant"; content: string; at: string }; // id を追加して識別、at は表示用時刻
@@ -93,6 +93,46 @@ function ConfirmModal({
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
+  // クエリの question を読み取り、該当 JSON の title を画面タイトルに反映する
+  const searchParams = useSearchParams();
+  const questionParam = searchParams?.get("question") ?? null;
+  const [questionMeta, setQuestionMeta] = useState<{ id: string; title: string; description?: string; raw?: any; ai_model?: string } | null>(null);
+
+  useEffect(() => {
+    if (!questionParam) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/questions");
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        if (!mounted) return;
+        const found = Array.isArray(data) ? data.find((d: any) => String(d.id) === String(questionParam)) : null;
+        if (found) {
+          setQuestionMeta({
+            id: String(found.id),
+            title: String(found.title ?? "ヒアリング"),
+            description: found.raw?.description ?? found.description ?? "",
+            raw: found.raw ?? found,
+            ai_model: found.raw?.ai_model ?? found.ai_model ?? undefined,
+          });
+        }
+      } catch (e) {
+        console.error("failed to load question meta", e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [questionParam]);
+
+  useEffect(() => {
+    // ドキュメントタイトルを更新
+    if (questionMeta?.title) {
+      document.title = `${questionMeta.title} — LLMBroadHearing`;
+    } else {
+      document.title = "ヒアリング — LLMBroadHearing";
+    }
+  }, [questionMeta]);
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -142,7 +182,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: messagesForApi }),
+        body: JSON.stringify({ messages: messagesForApi, question: questionParam /* 例: "Q_000001" */ }),
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -250,9 +290,29 @@ export default function ChatPage() {
   const confirmAndSave = async () => {
     setSaving(true);
     try {
+      // 読み込んだテンプレート JSON を取得して payload に含める
+      let questionJson: any = null;
+      if (questionParam) {
+        try {
+          const qres = await fetch("/api/questions");
+          if (qres.ok) {
+            const qdata = await qres.json();
+            const found = Array.isArray(qdata)
+              ? qdata.find((d: any) => String(d.id) === String(questionParam))
+              : null;
+            questionJson = found?.raw ?? found ?? null;
+          }
+        } catch (e) {
+          console.warn("confirmAndSave: failed to fetch question json", e);
+        }
+      }
+
+      // まずは要約無しで素早く保存（UI をブロックしない）
       const payload = {
         exportedAt: new Date().toISOString(),
         messages,
+        question: questionJson,
+        summary: null, // まずは null にして即保存
       };
       const res = await fetch("/api/save", {
         method: "POST",
@@ -268,12 +328,35 @@ export default function ChatPage() {
         });
         return;
       }
+
+      // 保存完了を即時にユーザーに通知
       setToast({
         open: true,
         type: "success",
         msg: `保存しました：${json.file || ""}`,
       });
       setConfirmOpen(false);
+
+      // --- 要約生成をバックグラウンドで実行（UIは待たない） ---
+      // サーバーに saved filename を渡して、要約を生成しファイルに追記してもらう
+      (async () => {
+        try {
+          await fetch("/api/save-summary", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              file: json.file, // /api/save が返す保存ファイル名
+              messages,
+              question: questionJson,
+            }),
+          });
+          console.log("background: summary generation requested");
+        } catch (e) {
+          console.warn("background: save-summary failed", e);
+        }
+      })();
+      // ---------------------------------------------------------
+
       setTimeout(() => router.push("/"), 900);
     } finally {
       setSaving(false);
@@ -307,7 +390,7 @@ export default function ChatPage() {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: [] }),
+          body: JSON.stringify({ messages: [], question: questionParam }),
         });
         if (!res.ok) {
           const txt = await res.text();
@@ -368,10 +451,24 @@ export default function ChatPage() {
 
   return (
     <div className={styles.wrap}>
-      <header className={styles.header}>
-        <div className={styles.title}>ヒアリング</div>
-        <div className={styles.headerActions}>
-          {/* 保存せずに終了（保存して終了ボタンの左） */}
+      <header className={styles.header} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {/* 左：タイトル + description */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className={styles.title}>{questionMeta?.title ?? "ヒアリング"}</div>
+          <div className={styles.subtitle}>
+            {questionMeta?.raw?.description ?? questionMeta?.description ?? ""}
+          </div>
+        </div>
+
+        {/* 右上：モデル表示（ヘッダ右上に固定） */}
+        <div className={styles.modelWrapper}>
+          <div className={styles.modelBadge}>
+            model: {questionMeta?.raw?.ai_model ?? questionMeta?.ai_model ?? "既定"}
+          </div>
+        </div>
+
+        {/* 右下（ヘッダ下底）：アクションボタンを配置 */}
+        <div className={styles.headerActions} style={{ marginLeft: "auto", alignItems: "center", gap: 10 }}>
           <button
             className={styles.btnGhost}
             onClick={() => openConfirm("discard")}
@@ -380,7 +477,6 @@ export default function ChatPage() {
             保存せずに終了
           </button>
 
-          {/* 既存の「保存してヒアリングを終了」ボタン（例） */}
           <button
             className={styles.endBtn}
             onClick={() => openConfirm("save")}

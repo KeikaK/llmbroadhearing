@@ -5,7 +5,7 @@
   --text: #222;
   --muted: #5b6771; /* 可読性向上のため少し濃くする */
   --green: #06c755;
-  --header-h: 64px;
+  --header-h: 96px; /* ヘッダ高さを拡大（ここを調整） */
   --footer-h: 72px;
   --composer-h: var(--footer-h);
 }
@@ -18,11 +18,34 @@
 
 .header {
   position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
-  display: flex; align-items: center; padding: 0 16px;
+  display: flex;
+  align-items: flex-start; /* 上寄せにしてタイトル/サブタイトルは上に並ぶ */
+  padding: 12px 16px; /* 少し内側に余白を持たせる */
   background: #06c755; border-bottom: 1px solid var(--border); z-index: 50;
 }
-.title { font-weight: 700; font-size: 18px; }
-.headerActions { margin-left: auto; display: flex; gap: 8px; }
+.title {
+  font-weight: 700;
+  font-size: 36px; /* 旧 18px -> 約2倍 */
+  line-height: 1.05;
+}
+.modelWrapper {
+  position: absolute;
+  right: 16px;
+  top: 12px; /* ヘッダ右上にモデル表示 */
+  z-index: 60;
+}
+
+.headerActions {
+  /* ヘッダ下部に固定で表示する（右下寄せ） */
+  position: absolute;
+  right: 16px;
+  bottom: 12px; /* ヘッダの下底に配置 */
+  margin-left: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .endBtn { border: 1px solid #2563eb; background: #2563eb; color: #fff; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
 
 .list {
@@ -303,4 +326,60 @@
   0%   { transform: translateX(-50%) translateY(0) scale(1); opacity: 1 }
   50%  { transform: translateX(-50%) translateY(6px) scale(.9); opacity: .6 }
   100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1 }
+}
+/* 目立ちすぎない白文字バッジ（model 表示） */
+.modelBadge {
+  font-size: 12px;
+  color: #f8fafc;
+  background: rgba(255,255,255,0.03);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  font-weight: 600;
+  display: inline-block;
+  line-height: 1;
+  margin-right: 6px;
+  transform: none; /* 上端に揃えるため移動なしに */
+}
+
+/* ヒアリング一覧カード（緑系） */
+.questionCard {
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(180deg,#f7fff9,#ffffff);
+  border: 1px solid rgba(6,199,85,0.08);
+  box-shadow: 0 10px 28px rgba(6,199,85,0.06);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 110px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 回答セッションカード（青系） */
+.sessionCard {
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg,#f2f9ff,#fff);
+  border: 1px solid rgba(6,106,255,0.06);
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 10px 24px rgba(6,106,255,0.06);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.92); /* 白っぽい文字 */
+  margin-top: 4px;
+  max-width: 720px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* 背景に応じて視認性が悪ければ下記のコメントアウトを外して微かな影を付けてください */
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25); 
 }
