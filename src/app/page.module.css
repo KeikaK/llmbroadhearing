@@ -1,0 +1,197 @@
+/* テンプレ管理ボタン：フラットな紫→赤グラデーション */
+.adminBtn{
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #7c3aed 0%, #ef4444 100%); /* 左: 紫 -> 右: 赤 */
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 14px;
+  transition: background .16s ease, opacity .12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: none; /* フラットデザイン */
+}
+
+/* ホバーで少し濃く（浮き上がり無し） */
+.adminBtn:hover{
+  background: linear-gradient(90deg, #6b21d8 0%, #dc2626 100%);
+  opacity: 0.98;
+}
+
+/* 押下時のフィードバック：やや暗く */
+.adminBtn:active{
+  background: linear-gradient(90deg, #581cbe 0%, #b91c1c 100%);
+  opacity: 0.95;
+}
+
+/* キーボードフォーカス対応（アクセシブルなリング） */
+.adminBtn:focus{
+  outline: 3px solid rgba(199, 46, 46, 0.18);
+  outline-offset: 4px;
+}
+
+/* リンク内のデフォルトスタイル除去（念のため） */
+:global(a) > .adminBtn { text-decoration: none; }
+
+/* レイアウト */
+.main {
+  min-height: 100svh;
+  background: #eef2f6;
+  padding: 24px;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ヘッダ */
+.header {
+  padding: 8px 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  background: linear-gradient(90deg, #06c755, #06a6ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 区切り線 */
+.hr {
+  border: none;
+  border-top: 1px solid rgba(15,23,42,0.06);
+  margin: 8px 0 18px;
+}
+.hrLight {
+  border: none;
+  border-top: 1px solid rgba(15,23,42,0.04);
+  margin: 22px 0;
+}
+
+/* ヒアリング一覧 */
+.sectionGrid {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 20px;
+}
+.sectionLabel {
+  grid-column: 1 / -1;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 700;
+  padding-top: 6px;
+}
+.questionsPanel { grid-column: 1 / -1; }
+.questionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.empty {
+  grid-column: 1 / -1;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fbfdff;
+  border: 1px dashed #e6eef8;
+  color: #9ca3af;
+}
+
+/* カード */
+.cardLink { text-decoration: none; }
+.questionCard{
+  padding: 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(4,81,47,0.08);
+  box-shadow: 0 6px 18px rgba(6,25,50,0.04);
+  cursor: pointer;
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 130px;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.questionAccent {
+  border-left: 8px solid #059669;
+  padding-left: 16px;
+  background-image: linear-gradient(90deg, rgba(5,150,105,0.02), transparent);
+}
+.questionCard:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 18px 36px rgba(6,25,50,0.12);
+}
+.qTitle{
+  font-size: 18px;
+  font-weight: 800;
+  color: #033027;
+  margin-bottom: 4px;
+}
+.qDesc{
+  font-size: 14px;
+  color: #134e3a;
+  line-height: 1.45;
+  opacity: 0.95;
+}
+.cardMeta{
+  margin-top: auto;
+  font-size: 12px;
+  color: #065f46;
+}
+
+/* 回答セクション */
+.sessionSection{
+  background: linear-gradient(180deg,#f2f9ff,#fff);
+  border-radius: 12px;
+  border: 1px solid rgba(6,106,255,0.06);
+  padding: 18px;
+  min-height: 280px;
+  box-shadow: 0 12px 36px rgba(6,106,255,0.04);
+}
+.sessionLabel{
+  color: #0f4aa6;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.sessionEmpty{ color: #6b7280; }
+.sessionGrid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.sessionCard{
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg,#f6fbff,#ffffff);
+  border: 1px solid rgba(6,106,255,0.08);
+  min-height: 96px;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 10px 24px rgba(6,106,255,0.06);
+}
+.sessionAccent{ border-left: 6px solid #06a6ff; padding-left: 12px; }
+.sessionTitle{ font-size: 15px; font-weight: 800; color: #08306b; }
+.sessionMeta{ font-size: 12px; color: #2b6cb0; }
+.sessionSummary{ font-size: 13px; color: #08303b; margin-top: 8px; line-height: 1.4; flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.sessionModel{ font-size: 12px; color: #3b82f6; margin-top: 8px; }
+
+/* actions area */
+.actionsWrap{ display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+.linkReset{ text-decoration:none; }
+
+/* 既存 adminBtn は既に定義済み（page.module.css） */
