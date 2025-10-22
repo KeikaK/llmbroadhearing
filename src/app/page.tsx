@@ -157,14 +157,22 @@ export default function Home() {
           ) : (
             <div className={styles.sessionGrid}>
               {sessions.map((s) => (
-                <div key={s.file} className={`${styles.sessionCard} ${styles.sessionAccent}`}>
-                  <div className={styles.sessionTitle}>{s.questionTitle ?? "（無題）"}</div>
-                  <div className={styles.sessionMeta}>
-                    {s.exportedAt ? `${new Date(s.exportedAt).toLocaleString()} に回答済` : ""}
+                <Link
+                  key={s.file}
+                  href={`/sessions/${encodeURIComponent(s.file)}`}
+                  className={styles.cardLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div data-debug="session-card" className={`${styles.sessionCard} ${styles.sessionAccent}`} role="button">
+                    <div className={styles.sessionTitle}>{s.questionTitle ?? "（無題）"}</div>
+                    <div className={styles.sessionMeta}>
+                      {s.exportedAt ? `${new Date(s.exportedAt).toLocaleString()} に回答済` : ""}
+                    </div>
+                    <div className={styles.sessionSummary}>{s.summary ?? "要約なし"}</div>
+                    <div className={styles.sessionModel}>{s.ai_model ? `model: ${s.ai_model}` : ""}</div>
                   </div>
-                  <div className={styles.sessionSummary}>{s.summary ?? "要約なし"}</div>
-                  <div className={styles.sessionModel}>{s.ai_model ? `model: ${s.ai_model}` : ""}</div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

@@ -1,0 +1,131 @@
+/* セッションページ専用スタイル（page.tsx と同名の CSS モジュール） */
+
+.header { display:flex; align-items:baseline; justify-content:space-between; }
+.title {
+  font-family: "Poppins", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-weight: 800;
+  font-size: 50px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+
+  /* グラデーション文字 */
+  background: linear-gradient(90deg, #06b6d4 0%, #3b82f6 50%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  /* 立体感 */
+  text-shadow: 0 8px 30px rgba(59,130,246,0.06);
+
+  /* 見出しの余白と丸み（好みで調整） */
+  padding: 6px 12px;
+  border-radius: 10px;
+  display: inline-block;
+  position: relative;
+  transform-origin: left center;
+}
+
+/* 左にスリムなアクセントバー（以前のデザインを再現） */
+.title::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 36px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(3,105,161,1), rgba(59,130,246,1));
+  box-shadow: 0 6px 18px rgba(59,130,246,0.12);
+}
+
+/* 小さい画面での調整 */
+@media (max-width: 640px) {
+  .title {
+    font-size: 20px;
+    padding: 4px 10px;
+  }
+  .title::before {
+    height: 26px;
+    left: -10px;
+    width: 5px;
+  }
+}
+
+.sessionHeader { gap:12px; }
+.sessionMetaRow { display:flex; gap:12px; align-items:center; margin-top:6px; }
+.sessionFile { font-size:13px; color:#7f1d1d; }
+.sessionModelPill {
+  font-size:13px; color:#3b82f6; font-weight:700;
+  background:rgba(59,130,246,0.06); padding:4px 8px; border-radius:8px;
+}
+
+.sessionContentWrap { max-width:1100px; margin:0 auto; }
+.sessionContentCard {
+  background:#ffffff; padding:18px; border-radius:12px;
+  box-shadow:0 18px 40px rgba(11,7,7,0.04);
+}
+
+/* 全データ（折りたたみ） */
+.jsonDump summary { cursor:pointer; font-weight:700; color:#7f1d1d; }
+.jsonPre {
+  background:#f7fbff; padding:10px; border-radius:8px; border:1px solid rgba(14,93,230,0.06);
+  white-space:pre-wrap; word-break:break-word; max-height:36vh; overflow:auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:13px;
+}
+
+/* セッション情報グリッド */
+.metaGrid {
+  background: linear-gradient(180deg, rgba(240,249,255,0.9), rgba(250,254,255,0.85));
+  border:1px solid rgba(14,93,230,0.06); box-shadow:0 6px 20px rgba(14,93,230,0.04);
+  padding:14px; border-radius:10px; position:relative; overflow:hidden;
+  border-left:6px solid rgba(14,93,230,0.9);
+}
+.kvList { display:flex; flex-direction:column; gap:8px; }
+.kvRow {
+  display:grid; grid-template-columns:160px 1fr; gap:12px; align-items:start;
+  padding:10px; border-radius:8px; background:rgba(255,255,255,0.9);
+  border:1px solid rgba(14,93,230,0.03);
+}
+.kvKey { font-weight:700; color:#0e4bb8; font-size:13px; }
+.kvVal { color:#123143; font-size:13px; }
+
+/* 会話表示 */
+.conversationWrap { display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+.msgRowUser { display:flex; justify-content:flex-end; }
+.msgRowAssistant { display:flex; justify-content:flex-start; }
+
+.msgBubbleUser {
+  max-width:78%; padding:12px 14px; border-radius:14px;
+  background:linear-gradient(90deg,#10b981,#3b82f6); color:#fff; box-shadow:0 6px 18px rgba(11,7,7,0.04);
+}
+.msgBubbleAssistant {
+  max-width:78%; padding:12px 14px; border-radius:12px; background:#fff; color:#2b0f0f;
+  border:1px solid rgba(2,6,23,0.06); box-shadow:0 6px 18px rgba(11,7,7,0.04);
+}
+
+.msgText { white-space:pre-wrap; line-height:1.5; }
+.msgTime { font-size:11px; color:rgba(43,12,12,0.45); margin-top:8px; }
+
+/* 必要ならここに追加で調整を入れてください */
+
+/* 背景が黒くなる問題の修正：このページだけ明るい背景にする */
+.main {
+  min-height: 100vh;           /* ビューポート全体を覆う */
+  background: #ffffff;         /* ページ背景を白に固定 */
+  color: #0b1220;              /* 文字色を濃い色に */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* コンテンツカードの背景を明確に */
+.sessionContentCard {
+  background: #ffffff;         /* 明確に白にする */
+  color: inherit;
+}
+
+/* JSON プリ／キー値領域の背景も明るめに調整（必要なら） */
+.jsonPre { background: #f7fbff; color: inherit; }
+
+/* 必要なら main の上書きを強制する（最終手段） */
+/* :global(body) { background: #fff; color: #0b1220; } */
