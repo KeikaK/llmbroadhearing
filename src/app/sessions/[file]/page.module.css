@@ -1,6 +1,12 @@
-/* セッションページ専用スタイル（page.tsx と同名の CSS モジュール） */
+/* セッションページ専用スタイル
+   - page.tsx と同ディレクトリに置かれる CSS module
+   - 見出し、メタ情報、会話バブル、JSON 表示などを制御
+   ※ このファイルは CSS Modules として読み込まれます（クラス名はローカル化されます） */
 
+/* ヘッダ・タイトル周り */
 .header { display:flex; align-items:baseline; justify-content:space-between; }
+
+/* タイトル（グラフィカルなグラデーション文字） */
 .title {
   font-family: "Poppins", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   font-weight: 800;
@@ -17,7 +23,7 @@
   /* 立体感 */
   text-shadow: 0 8px 30px rgba(59,130,246,0.06);
 
-  /* 見出しの余白と丸み（好みで調整） */
+  /* 見出しの余白と丸み */
   padding: 6px 12px;
   border-radius: 10px;
   display: inline-block;
@@ -25,7 +31,7 @@
   transform-origin: left center;
 }
 
-/* 左にスリムなアクセントバー（以前のデザインを再現） */
+/* タイトル左のアクセントバー（疑似要素） */
 .title::before {
   content: "";
   position: absolute;
@@ -39,7 +45,7 @@
   box-shadow: 0 6px 18px rgba(59,130,246,0.12);
 }
 
-/* 小さい画面での調整 */
+/* レスポンシブ：小画面でタイトルを縮小 */
 @media (max-width: 640px) {
   .title {
     font-size: 20px;
@@ -52,36 +58,44 @@
   }
 }
 
+/* セッションヘッダ（タイトル右のメタ行） */
 .sessionHeader { gap:12px; }
 .sessionMetaRow { display:flex; gap:12px; align-items:center; margin-top:6px; }
 .sessionFile { font-size:13px; color:#7f1d1d; }
+
+/* モデル表示のピル（強調） */
 .sessionModelPill {
   font-size:13px; color:#3b82f6; font-weight:700;
   background:rgba(59,130,246,0.06); padding:4px 8px; border-radius:8px;
 }
 
+/* セッション本文ラッパー（中央揃え・最大幅） */
 .sessionContentWrap { max-width:1100px; margin:0 auto; }
 .sessionContentCard {
   background:#ffffff; padding:18px; border-radius:12px;
   box-shadow:0 18px 40px rgba(11,7,7,0.04);
 }
 
-/* 全データ（折りたたみ） */
+/* 折りたたみで表示する「全データ」領域 */
 .jsonDump summary { cursor:pointer; font-weight:700; color:#7f1d1d; }
+/* JSON 表示用プリスタイル（可読性重視） */
 .jsonPre {
   background:#f7fbff; padding:10px; border-radius:8px; border:1px solid rgba(14,93,230,0.06);
   white-space:pre-wrap; word-break:break-word; max-height:36vh; overflow:auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:13px;
 }
 
-/* セッション情報グリッド */
+/* セッション情報グリッド（キー/値の一覧表示） */
 .metaGrid {
   background: linear-gradient(180deg, rgba(240,249,255,0.9), rgba(250,254,255,0.85));
   border:1px solid rgba(14,93,230,0.06); box-shadow:0 6px 20px rgba(14,93,230,0.04);
   padding:14px; border-radius:10px; position:relative; overflow:hidden;
+  /* 左に強調のアクセントバー */
   border-left:6px solid rgba(14,93,230,0.9);
 }
 .kvList { display:flex; flex-direction:column; gap:8px; }
+
+/* 各行はキーと値で 2 列レイアウト */
 .kvRow {
   display:grid; grid-template-columns:160px 1fr; gap:12px; align-items:start;
   padding:10px; border-radius:8px; background:rgba(255,255,255,0.9);
@@ -90,26 +104,27 @@
 .kvKey { font-weight:700; color:#0e4bb8; font-size:13px; }
 .kvVal { color:#123143; font-size:13px; }
 
-/* 会話表示 */
+/* 会話表示：バブルスタイル */
 .conversationWrap { display:flex; flex-direction:column; gap:12px; margin-top:8px; }
 .msgRowUser { display:flex; justify-content:flex-end; }
 .msgRowAssistant { display:flex; justify-content:flex-start; }
 
+/* ユーザ側（緑→青グラデーション）のバブル */
 .msgBubbleUser {
   max-width:78%; padding:12px 14px; border-radius:14px;
   background:linear-gradient(90deg,#10b981,#3b82f6); color:#fff; box-shadow:0 6px 18px rgba(11,7,7,0.04);
 }
+/* アシスタント側のバブル（白背景に境界） */
 .msgBubbleAssistant {
   max-width:78%; padding:12px 14px; border-radius:12px; background:#fff; color:#2b0f0f;
   border:1px solid rgba(2,6,23,0.06); box-shadow:0 6px 18px rgba(11,7,7,0.04);
 }
 
+/* バブル内テキスト・時刻 */
 .msgText { white-space:pre-wrap; line-height:1.5; }
 .msgTime { font-size:11px; color:rgba(43,12,12,0.45); margin-top:8px; }
 
-/* 必要ならここに追加で調整を入れてください */
-
-/* 背景が黒くなる問題の修正：このページだけ明るい背景にする */
+/* ページ背景が黒くなる問題を回避するため、このモジュールで明示的に上書き */
 .main {
   min-height: 100vh;           /* ビューポート全体を覆う */
   background: #ffffff;         /* ページ背景を白に固定 */
@@ -118,14 +133,13 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* コンテンツカードの背景を明確に */
+/* コンテンツカードの背景は確実に白 */
 .sessionContentCard {
   background: #ffffff;         /* 明確に白にする */
   color: inherit;
 }
 
-/* JSON プリ／キー値領域の背景も明るめに調整（必要なら） */
+/* JSON 表示プリの色も調整 */
 .jsonPre { background: #f7fbff; color: inherit; }
 
-/* 必要なら main の上書きを強制する（最終手段） */
-/* :global(body) { background: #fff; color: #0b1220; } */
+/* ここに追加の調整を入れてください（必要に応じて） */

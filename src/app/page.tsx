@@ -2,6 +2,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "./page.module.css";
+
+/* ---------- 型定義 ----------
+   - QuestionItem: ヒアリングテンプレート一覧の要素
+   - SessionItem: セッション一覧 API が返すメタ情報用
+*/
 type QuestionItem = { id: string; title: string; description?: string; raw?: any };
 type SessionItem = {
   file: string;
@@ -11,13 +16,16 @@ type SessionItem = {
   ai_model?: string | null;
 };
 
-// ヒアリング一覧カード（強調版：よりコントラスト高く目立たせる）
+/* ---------- インラインスタイル：カードの基礎定義 ----------
+   - 既存コードで使われる見た目を JS オブジェクトで定義（JSX 内で使用）
+   - GUI 表示に関する注釈のみ。ロジックには影響しません。
+*/
 const questionCardBase: React.CSSProperties = {
   padding: 20,
   borderRadius: 16,
-  background: "#ffffff", // 真っ白で目立たせる
-  border: "1px solid rgba(4,81,47,0.08)", // 緑寄りの明瞭な境界
-  boxShadow: "0 18px 40px rgba(6,199,85,0.09)", // 強めの緑影で浮かせる
+  background: "#ffffff",
+  border: "1px solid rgba(4,81,47,0.08)",
+  boxShadow: "0 18px 40px rgba(6,199,85,0.09)",
   cursor: "pointer",
   display: "flex",
   flexDirection: "column",
@@ -29,16 +37,15 @@ const questionCardBase: React.CSSProperties = {
   transition: "transform .16s ease, box-shadow .16s ease",
 };
 const questionAccent = {
-  borderLeft: "8px solid #059669", // 太めのアクセントライン
+  borderLeft: "8px solid #059669",
   paddingLeft: 16,
-  backgroundImage: "linear-gradient(90deg, rgba(5,150,105,0.02), transparent)", // 左側に薄いトーンを追加
+  backgroundImage: "linear-gradient(90deg, rgba(5,150,105,0.02), transparent)",
 };
 
-// 回答内容カード（青系アクセントで明確に分離）
 const sessionCardBase: React.CSSProperties = {
   padding: 14,
   borderRadius: 12,
-  background: "linear-gradient(180deg,#f6fbff,#ffffff)", // 薄い青トーン背景
+  background: "linear-gradient(180deg,#f6fbff,#ffffff)",
   border: "1px solid rgba(6,106,255,0.08)",
   minHeight: 96,
   display: "flex",
@@ -48,24 +55,28 @@ const sessionCardBase: React.CSSProperties = {
 };
 const sessionAccent = { borderLeft: "6px solid #06a6ff", paddingLeft: 12 };
 
-// カード内のタイトル／説明スタイル（レンダー内で使用）
 const qTitleStyle: React.CSSProperties = {
   fontSize: 18,
   fontWeight: 800,
-  color: "#033027", // 濃い緑で視認性向上
+  color: "#033027",
   marginBottom: 4,
 };
 const qDescStyle: React.CSSProperties = {
   fontSize: 14,
-  color: "#134e3a", // 説明も少し濃く
+  color: "#134e3a",
   lineHeight: 1.45,
   opacity: 0.95,
 };
 
+/* ---------- Home コンポーネント ----------
+   - 質問テンプレート一覧と保存済みセッション一覧を取得して表示する
+   - fetch はクライアントサイドで行い、マウント判定 (mounted) でメモリリークを防止
+*/
 export default function Home() {
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
 
+  /* 質問テンプレートの取得（初回マウント） */
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -75,11 +86,11 @@ export default function Home() {
         const data = await res.json();
         if (!mounted) return;
         if (Array.isArray(data)) {
+          // API の各エントリから表示に必要なプロパティを抽出
           setQuestions(
             data.map((d: any) => ({
               id: String(d.id),
               title: String(d.title ?? "untitled"),
-              // JSON 内の description を確実に拾う（raw の中やトップレベルの両方を確認）
               description: String(
                 d.raw?.description ??
                   d.description ??
@@ -96,10 +107,11 @@ export default function Home() {
       }
     })();
     return () => {
-      mounted = false;
+      mounted = false; // クリーンアップして非同期コールバックの副作用を防ぐ
     };
   }, []);
 
+  /* 保存済みセッション一覧の取得（初回マウント） */
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -116,6 +128,12 @@ export default function Home() {
     return () => { mounted = false; };
   }, []);
 
+  /* ---------- JSX: レイアウト ----------
+     - 左上にタイトル
+     - テンプレ一覧（questions）: Link で /chat?question=ID へ遷移
+     - セッション一覧（sessions）: Link で /sessions/<file> を新タブで開く
+     - 管理ボタンは /admin/questions へ移動
+  */
   return (
     <main className={styles.main}>
       <div className={styles.container}>
@@ -135,6 +153,7 @@ export default function Home() {
               {questions.length === 0 ? (
                 <div className={styles.empty}>テンプレートがありません（data/questions を確認）</div>
               ) : questions.map((q) => (
+                /* 各テンプレは Link でチャットページに遷移 */
                 <Link key={q.id} href={`/chat?question=${encodeURIComponent(q.id)}`} className={styles.cardLink}>
                   <div role="button" tabIndex={0} className={`${styles.questionCard} ${styles.questionAccent}`}>
                     <div className={styles.qTitle}>{q.title}</div>
@@ -149,6 +168,7 @@ export default function Home() {
 
         <hr className={styles.hrLight} />
 
+        {/* 回答（セッション）セクション */}
         <section className={styles.sessionSection}>
           <div className={styles.sessionLabel}>回答内容</div>
 
@@ -157,6 +177,7 @@ export default function Home() {
           ) : (
             <div className={styles.sessionGrid}>
               {sessions.map((s) => (
+                /* セッションは別タブで開く（安全のため noopener を指定） */
                 <Link
                   key={s.file}
                   href={`/sessions/${encodeURIComponent(s.file)}`}
@@ -178,6 +199,7 @@ export default function Home() {
           )}
         </section>
 
+        {/* 管理ボタン */}
         <div className={styles.actionsWrap}>
           <Link href="/admin/questions" className={styles.linkReset}>
             <button className={styles.adminBtn} aria-label="テンプレート管理へ移動">テンプレート管理</button>

@@ -1,10 +1,19 @@
-@import "tailwindcss";
+/* グローバル CSS（アプリ全体に影響します） */
+/* 注意：
+   - Tailwind を使っている場合は import の順序やビルド設定に依存します。
+   - ここで定義した :root の変数は各ページのモジュール CSS から上書きできますが、
+     body や html に直接指定したスタイルは優先度が高く影響範囲が広い点に注意してください。 */
+
+@import "tailwindcss"; /* Tailwind の導入。ビルドツールの設定によっては @tailwind directives を使う場合あり。 */
 
 :root {
+  /* アプリのデフォルト配色変数 */
   --background: #ffffff;
   --foreground: #171717;
 }
 
+/* @theme inline がプロジェクト特有の記法でなければ確認を。
+   一部のツールでのみ解釈されるため、標準の CSS では無視されます。 */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,13 +21,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* body に直接背景色・文字色を指定。
+   個別のページで背景が黒くなる問題が出た場合は、
+   該当ページの CSS module で .main などを定義して上書きしてください（ローカル優先）。 */
 body {
   background: var(--background);
   color: var(--foreground);

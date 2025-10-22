@@ -1,3 +1,4 @@
+/* ルート変数：テーマカラーと主要寸法をここで定義 */
 :global(:root) {
   --bg: #eef2f6;
   --panel: #f7f9fc;
@@ -10,12 +11,15 @@
   --composer-h: var(--footer-h);
 }
 
+/* グローバルリセットと基本レイアウト */
 :global(*) { box-sizing: border-box; }
 :global(html), :global(body) { height: 100%; }
 :global(body) { margin: 0; background: var(--panel); }
 
+/* ページラッパー：全体の背景と最小高さを担保 */
 .wrap { min-height: 100vh; background: var(--panel); font-size: 16px; }
 
+/* ヘッダ：固定配置、タイトルと右上モデル表示を含む */
 .header {
   position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
   display: flex;
@@ -25,9 +29,10 @@
 }
 .title {
   font-weight: 700;
-  font-size: 36px; /* 旧 18px -> 約2倍 */
+  font-size: 36px; /* 大きな視認性の高い見出し */
   line-height: 1.05;
 }
+/* 右上に小さなモデルバッジを置くためのラッパー */
 .modelWrapper {
   position: absolute;
   right: 16px;
@@ -35,19 +40,18 @@
   z-index: 60;
 }
 
+/* ヘッダ下のアクション群（ヘッダ内に固定） */
 .headerActions {
-  /* ヘッダ下部に固定で表示する（右下寄せ） */
   position: absolute;
   right: 16px;
   bottom: 12px; /* ヘッダの下底に配置 */
-  margin-left: 0;
   display: flex;
   gap: 8px;
   align-items: center;
 }
-
 .endBtn { border: 1px solid #2563eb; background: #2563eb; color: #fff; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
 
+/* メッセージリスト領域：ヘッダと composer のスペースを考慮したパディング */
 .list {
   padding: 16px 20px;
   padding-top: calc(16px + var(--header-h));
@@ -58,9 +62,12 @@
 .listEmpty { display: flex; align-items: center; justify-content: center; }
 .empty { color: var(--muted); }
 
+/* メッセージ行の配置：AI と自分で左右寄せ */
 .row { display: flex; gap: 10px; margin: 10px 0; align-items: flex-end; }
 .ai { justify-content: flex-start; }
 .me { justify-content: flex-end; }
+
+/* アバター：丸く大きめに表示 */
 .avatar {
   width: 72px;                 /* 2倍に拡大 */
   height: 72px;
@@ -79,20 +86,23 @@
   border-radius: 50%;          /* 念のため img 自身も丸く */
 }
 
+/* 吹き出し：最大幅とパディングを指定 */
 .bubble { max-width: 60%; padding: 10px 12px; border-radius: 16px; }
+/* AI と自分で色分け */
 .aiBubble { background: #fff; border: 1px solid var(--border); color: var(--text); } /* AI返信の文字色を濃くする */
 .meBubble { background: var(--green); color: #fff; }
 .text { white-space: pre-wrap; }
+/* メタ情報（タイムスタンプ等） */
 .meta { font-size: 12px; opacity: .8; display: flex; gap: 8px; justify-content: flex-end; }
 .meMeta { color: #e9fff0; }
 .aiMeta { color: var(--muted); }
 
+/* Composer（入力欄）: 固定配置、3カラム構成 */
 .composer {
   position: fixed; left: 0; right: 0; bottom: 0;
   min-height: var(--footer-h);
   display: grid;
-  /* 左カラムを最小40px、最大20%にして、中央を入力欄にする */
-  grid-template-columns: minmax(40px, 20%) 1fr 46px;
+  grid-template-columns: minmax(40px, 20%) 1fr 46px; /* 左小カラム、入力、送信ボタン */
   align-items: center;
   gap: 10px;
   padding: 12px 14px; background: #fff; border-top: 1px solid var(--border); z-index: 40;
@@ -111,7 +121,7 @@
 .iconBtn { border: 1px solid #d9deea; background: #fff; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; }
 .send { background: var(--green); color: #fff; cursor: pointer; }
 
-/* 共通ボタン効果 */
+/* 共通ボタン効果：ホバー/アクティブの挙動 */
 .buttonLike,
 .endBtn,
 .iconBtn,
@@ -122,8 +132,6 @@
   transition: transform .12s ease, box-shadow .12s ease, filter .12s ease, background-color .12s ease;
   will-change: transform, box-shadow;
 }
-
-/* ホバーで少し持ち上げて影を出す */
 .endBtn:hover,
 .btnPrimary:hover,
 .send:hover,
@@ -133,8 +141,6 @@
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(2,6,23,0.08);
 }
-
-/* クリック（アクティブ）時は押し込まれた見た目に */
 .endBtn:active,
 .btnPrimary:active,
 .send:active,
@@ -145,8 +151,6 @@
   box-shadow: 0 4px 10px rgba(2,6,23,0.06);
   filter: brightness(.97);
 }
-
-/* フォーカス時のアウトライン（キーボード操作用） */
 .endBtn:focus-visible,
 .btnPrimary:focus-visible,
 .send:focus-visible,
@@ -157,24 +161,16 @@
   outline-offset: 3px;
   border-radius: 8px;
 }
-
-/* アイコンボタンは丸いので影とスケールを軽めに */
 .iconBtn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 6px 16px rgba(2,6,23,0.07); }
 .iconBtn:active { transform: translateY(0) scale(.97); box-shadow: 0 3px 8px rgba(2,6,23,0.05); }
-
-/* 送信ボタン（緑）はホバーで明るく、アクティブでやや暗く */
 .send:hover { filter: brightness(1.03); }
 .send:active { filter: brightness(.95); }
-
-/* Ghost ボタンは背景変化を維持しつつリフト */
 .btnGhost:hover { background: #f8fafc; transform: translateY(-2px); }
 .btnGhost:active { background: #f1f5f9; }
-
-/* Primary のホバーはわずかな明暗 */
 .btnPrimary:hover { filter: brightness(.98); }
 .btnPrimary:active { filter: brightness(.92); }
 
-/* === Toast === */
+/* === Toast（通知）スタイル === */
 .toast {
   position: fixed;
   right: 16px;
@@ -199,7 +195,7 @@
 }
 .toastClose:hover { color: #0f172a; }
 
-/* === Modal === */
+/* === Modal（ダイアログ） === */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -216,7 +212,6 @@
   color: var(--text);     /* メインテキスト色で濃く表示 */
   margin: 0 0 8px;
 }
-
 .modalBody {
   font-size: 14px;
   line-height: 1.4;
@@ -232,14 +227,14 @@
 .btnPrimary:hover { filter: brightness(1.05); }
 .btnPrimary:disabled { opacity: .6; cursor: not-allowed; }
 
-/* composer の左カラム内でアイコン/アバターを入力欄のすぐ左に寄せる */
+/* composer 内のアイコンを右端に寄せる（左カラム対応） */
 .composer .avatar,
 .composer .iconBtn {
   justify-self: end;   /* 右端に寄せる（入力欄のすぐ左に移動） */
   align-self: center;
 }
 
-/* アグレッシブで動きのあるカラフルスピナー（置換） */
+/* スピナー：装飾的なアニメーション */
 .spinner {
   position: relative;
   display: inline-block;
@@ -250,13 +245,10 @@
   border-radius: 50%;
   filter: drop-shadow(0 8px 22px rgba(33, 30, 60, 0.18));
   transform-origin: 50% 50%;
-  /* 背景は薄めにして重ねた要素で動かす */
   background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), transparent 30%),
               linear-gradient(135deg, rgba(255,255,255,0.02), transparent 40%);
   animation: spin-fast 0.7s linear infinite, wobble 1.8s ease-in-out infinite;
 }
-
-/* 外側リング（反時計回りで高速） */
 .spinner::before {
   content: "";
   position: absolute;
@@ -271,8 +263,6 @@
   opacity: 0.98;
   mix-blend-mode: screen;
 }
-
-/* 中央の回転コア（時計回りでゆっくり） */
 .spinner::after {
   content: "";
   position: absolute;
@@ -287,8 +277,6 @@
   animation: core-cw 1.6s linear infinite;
   transform-origin: 50% 50%;
 }
-
-/* 内側の小さな弧（点滅して移動感を出す） */
 .spinner .pulse {
   position: absolute;
   width: 8px;
@@ -301,8 +289,6 @@
   box-shadow: 0 6px 18px rgba(245,158,11,0.28);
   animation: pulse-move 1.2s ease-in-out infinite;
 }
-
-/* 色相変化でさらに派手に */
 @keyframes ring-ccw {
   0%   { transform: rotate(0deg)  scale(1); filter: hue-rotate(0deg); }
   50%  { transform: rotate(-180deg) scale(1.03); filter: hue-rotate(45deg); }
@@ -327,7 +313,8 @@
   50%  { transform: translateX(-50%) translateY(6px) scale(.9); opacity: .6 }
   100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1 }
 }
-/* 目立ちすぎない白文字バッジ（model 表示） */
+
+/* model 表示バッジ：ヘッダ背景上で見えるよう調整 */
 .modelBadge {
   font-size: 12px;
   color: #f8fafc;
@@ -371,6 +358,7 @@
   box-shadow: 0 10px 24px rgba(6,106,255,0.06);
 }
 
+/* 小見出し・サブタイトル */
 .subtitle {
   font-size: 13px;
   color: rgba(255,255,255,0.92); /* 白っぽい文字 */

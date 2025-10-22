@@ -3,41 +3,54 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
+/* 管理画面用の型 */
 type Q = { id: string; title?: string | null; description?: string | null; raw?: any };
 
+/**
+ * QuestionsAdmin
+ * - data/questions 配下のテンプレートを一覧表示／編集／作成／削除する管理画面コンポーネント
+ * - クライアントサイドで API を呼び出す（/api/questions）
+ */
 export default function QuestionsAdmin() {
   const router = useRouter();
+
+  // モーダル／トースト制御などの UI state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [saveMessage, setSaveMessage] = useState("保存しました");
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+
+  // テンプレート一覧と選択、読み込み中フラグ
   const [list, setList] = useState<Q[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 新規ファイル名入力
   const [newId, setNewId] = useState("");
-  // --- 明るめのテーマスタイル（赤テーマ） ---
+
+  // --- UI 用インラインテーマ（明るめの赤テーマ） ---
   const theme = {
-    background: "#fff5f5",   // very light rose
+    background: "#fff5f5",
     panel: "#ffffff",
-    subtle: "#fff1f2",       // pale pink
-    accent: "#ef4444",       // red-500
-    accentDark: "#b91c1c",   // red-700
-    text: "#2b0f0f",         // dark maroon
-    muted: "#7f1d1d",        // muted maroon
+    subtle: "#fff1f2",
+    accent: "#ef4444",
+    accentDark: "#b91c1c",
+    text: "#2b0f0f",
+    muted: "#7f1d1d",
     inputBorder: "rgba(139, 24, 24, 0.08)",
   };
-  // コンテナを相対配置にして画面右上に絶対配置ボタンを置けるようにする
+  // コンテナ等のインラインスタイル（視覚的補助、機能には影響しない）
   const containerStyle: React.CSSProperties = { padding: 24, background: theme.background, minHeight: "100vh", position: "relative" };
   const panelStyle: React.CSSProperties = { background: theme.panel, padding: 18, borderRadius: 12, boxShadow: "0 10px 30px rgba(139,24,24,0.06)" };
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${theme.inputBorder}`, background: "#fff", color: theme.text };
   const textareaStyle: React.CSSProperties = { width: "100%", minHeight: 80, fontFamily: "monospace", padding: 12, borderRadius: 10, border: `1px solid ${theme.inputBorder}`, background: "#fff", color: theme.text };
   const buttonPrimary: React.CSSProperties = { background: `linear-gradient(180deg, ${theme.accent}, ${theme.accentDark})`, color: "#fff", padding: "10px 14px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 800, boxShadow: "0 8px 20px rgba(239,68,68,0.12)" };
   const buttonSecondary: React.CSSProperties = { background: theme.subtle, color: theme.text, padding: "8px 12px", borderRadius: 10, border: `1px solid ${theme.inputBorder}`, cursor: "pointer", fontWeight: 700 };
-  // --- end styles ---
-  // ラベルを強調（見やすく）
+  // ラベルスタイル（視認性向上）
   const labelStyle: React.CSSProperties = { display: "block", fontWeight: 800, color: theme.text, fontSize: 14, marginBottom: 6 };
+  // --- end styles ---
 
-  // フォームフィールド
+  // フォームフィールドの state（編集対象）
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -45,20 +58,22 @@ export default function QuestionsAdmin() {
   const [aiModel, setAiModel] = useState("");
   const [extraRaw, setExtraRaw] = useState<any>(null);
 
-  // 追加フィールド：case_id / question_id
+  // 追加フィールド: case_id, question_id（テンプレ内部の識別子）
   const [caseId, setCaseId] = useState("");
   const [questionIdField, setQuestionIdField] = useState("");
 
-  // JSON プレビュー / エラー
+  // JSON プレビューとパースエラー表示用
   const [previewJson, setPreviewJson] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // マウント時に /api/questions から一覧を取得
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch("/api/questions");
         if (!res.ok) throw new Error(await res.text());
         const arr = await res.json();
+        // API の raw を保持して選択時に詳細を表示する
         setList(arr.map((d: any) => ({ id: String(d.id), title: d.title ?? d.id, raw: d.raw ?? d })));
       } catch (e) {
         console.warn("load questions failed", e);
@@ -66,6 +81,7 @@ export default function QuestionsAdmin() {
     })();
   }, []);
 
+  // selected が変わったら該当テンプレの詳細を読み込む
   useEffect(() => {
     if (!selected) {
       clearForm();
@@ -77,6 +93,7 @@ export default function QuestionsAdmin() {
         const res = await fetch(`/api/questions/${encodeURIComponent(selected)}`);
         if (!res.ok) throw new Error(await res.text());
         const j = await res.json();
+        // フォームに読み込む（複数キー名に対応）
         setTitle(String(j.title ?? j.name ?? ""));
         setDescription(String(j.description ?? j.desc ?? j.promptDescription ?? ""));
         setPrompt(String(j.prompt ?? j.system_prompt ?? ""));
@@ -84,6 +101,7 @@ export default function QuestionsAdmin() {
         setAiModel(String(j.ai_model ?? j.model ?? ""));
         setCaseId(String(j.case_id ?? j.caseId ?? ""));
         setQuestionIdField(String(j.question_id ?? j.questionId ?? ""));
+        // raw のうち上で使ったキーを除いた残りを extraRaw として保持
         const copy = { ...j };
         delete copy.title;
         delete copy.description;
@@ -106,6 +124,7 @@ export default function QuestionsAdmin() {
     })();
   }, [selected]);
 
+  // フォームが変わるたびに JSON プレビューを生成（保存時に送る内容）
   useEffect(() => {
     try {
       const out: any = {};
@@ -125,6 +144,7 @@ export default function QuestionsAdmin() {
     }
   }, [title, description, prompt, firstMessage, aiModel, extraRaw, caseId, questionIdField]);
 
+  // フォームクリア
   function clearForm() {
     setTitle("");
     setDescription("");
@@ -138,13 +158,13 @@ export default function QuestionsAdmin() {
     setQuestionIdField("");
   }
 
-  // 保存確認モーダルを開く
+  // 保存確認モーダル表示（選択がない場合は警告）
   function openSaveConfirm() {
     if (!selected) return alert("テンプレートを選択してください");
     setShowSaveConfirm(true);
   }
 
-  // 実際に保存を行う
+  // 実際に PUT で保存する処理
   async function performSave() {
     setShowSaveConfirm(false);
     setLoading(true);
@@ -165,12 +185,13 @@ export default function QuestionsAdmin() {
     }
   }
 
-  // 削除用モーダルを開く（選択がなければ警告）
+  // 削除確認を開く（選択チェック）
   function openDeleteConfirm() {
     if (!selected) return alert("テンプレートを選択してください");
     setShowDeleteConfirm(true);
   }
 
+  // 削除確定処理（DELETE）
   async function handleConfirmDelete() {
     setShowDeleteConfirm(false);
     if (!selected) return;
@@ -178,19 +199,19 @@ export default function QuestionsAdmin() {
       const res = await fetch(`/api/questions/${encodeURIComponent(selected)}`, { method: "DELETE" });
       if (!res.ok) { alert("削除失敗"); return; }
       alert("削除しました");
-      location.reload();
+      location.reload(); // 簡易リロードで一覧反映
     } catch (e: any) {
       alert("削除エラー: " + String(e));
     }
   }
 
-  // 保存後モーダルを閉じてリロード
+  // 保存成功モーダルを閉じると一覧をリロード
   function handleSaveClose() {
     setShowSaveSuccess(false);
-    // リロードして最新状態反映（必要なら差し替え）
     location.reload();
   }
 
+  /* ---------- JSX: 管理画面 UI ---------- */
   return (
     <div className={styles.container}>
       {/* ヘッダ */}
@@ -209,6 +230,7 @@ export default function QuestionsAdmin() {
               placeholder="新規ファイル名"
               value={newId}
               onChange={(e) => {
+                // 入力制限: 英数字と . _ - のみ許可し、不正なドット連続や先頭末尾のドットを排除
                 let v = e.target.value.replace(/[^a-zA-Z0-9._-]/g, "");
                 v = v.replace(/\.{2,}/g, ".");
                 v = v.replace(/^\.+/, "").replace(/\.+$/, "");
@@ -224,7 +246,7 @@ export default function QuestionsAdmin() {
           </div>
 
           <div className={styles.list}>
-            {/* リスト内のヘッダ：枠の中に収める */}
+            {/* リストヘッダ */}
             <div className={styles.listHeader}>テンプレート一覧</div>
 
             <div className={styles.list}>
@@ -289,6 +311,7 @@ export default function QuestionsAdmin() {
               <textarea
                 value={extraRaw ? JSON.stringify(extraRaw, null, 2) : ""}
                 onChange={(e) => {
+                  // ユーザ入力を JSON としてパースし、失敗時はエラー表示
                   try {
                     const v = e.target.value.trim() ? JSON.parse(e.target.value) : null;
                     setExtraRaw(v);
@@ -318,7 +341,7 @@ export default function QuestionsAdmin() {
         </main>
       </div>
 
-      {/* 確認モーダル（削除） */}
+      {/* 削除確認モーダル */}
       {showDeleteConfirm && (
         <div className={styles.confirmOverlay} role="dialog" aria-modal="true" aria-label="削除確認ダイアログ">
           <div className={styles.confirmDialog}>

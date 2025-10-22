@@ -3,8 +3,22 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
 
-type Msg = { id: string; role: "user" | "assistant"; content: string; at: string }; // id を追加して識別、at は表示用時刻
+/**
+ * Msg 型
+ * - id: 各メッセージの一意識別子（レンダリング key や更新時の判定に使用）
+ * - role: "user" | "assistant"
+ * - content: 表示するテキスト本体
+ * - at: 表示用の時刻文字列 (例: "12:34:56")
+ */
+type Msg = { id: string; role: "user" | "assistant"; content: string; at: string };
 
+/* ---------- 小さな UI コンポーネント：Toast, ConfirmModal ---------- */
+
+/**
+ * Toast：短時間の通知表示
+ * - open が true のとき自動でタイムアウト閉じ (2800ms)
+ * - type により色を切り替える（info / success / error）
+ */
 function Toast({
   open,
   type = "info",
@@ -45,6 +59,12 @@ function Toast({
   );
 }
 
+/**
+ * ConfirmModal：汎用の確認ダイアログ
+ * - open: 表示制御
+ * - loading: 保存などの処理中はボタンを無効化
+ * - onConfirm/onCancel: コールバック
+ */
 function ConfirmModal({
   open,
   title,
@@ -91,13 +111,23 @@ function ConfirmModal({
   );
 }
 
+/* ---------- メインコンポーネント: ChatPage ---------- */
 export default function ChatPage() {
+  // メッセージ配列（画面表示用）
   const [messages, setMessages] = useState<Msg[]>([]);
-  // クエリの question を読み取り、該当 JSON の title を画面タイトルに反映する
+
+  // クエリの question を読み、該当テンプレ情報を取得してタイトルやモデルを表示
   const searchParams = useSearchParams();
   const questionParam = searchParams?.get("question") ?? null;
-  const [questionMeta, setQuestionMeta] = useState<{ id: string; title: string; description?: string; raw?: any; ai_model?: string } | null>(null);
+  const [questionMeta, setQuestionMeta] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    raw?: any;
+    ai_model?: string;
+  } | null>(null);
 
+  // questionParam に基づきテンプレを読み込む（初回マウント後）
   useEffect(() => {
     if (!questionParam) return;
     let mounted = true;
@@ -124,8 +154,8 @@ export default function ChatPage() {
     return () => { mounted = false; };
   }, [questionParam]);
 
+  // ドキュメントタイトルを questionMeta に合わせて更新
   useEffect(() => {
-    // ドキュメントタイトルを更新
     if (questionMeta?.title) {
       document.title = `${questionMeta.title} — LLMBroadHearing`;
     } else {
@@ -133,32 +163,31 @@ export default function ChatPage() {
     }
   }, [questionMeta]);
 
+  /* ---------- UI / 操作用 state ---------- */
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false); // API 呼び出し全体のローディング
+  const [saving, setSaving] = useState(false); // 保存処理中
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"save" | "discard">("save");
-  const [toast, setToast] = useState<{
-    open: boolean;
-    type: "info" | "success" | "error";
-    msg: string;
-  }>({ open: false, type: "info", msg: "" });
+  const [toast, setToast] = useState<{ open: boolean; type: "info" | "success" | "error"; msg: string }>({ open: false, type: "info", msg: "" });
 
-  // 現在「スピナーを表示中」のアシスタントメッセージ id
+  // ストリーミング中（最初のチャンク受信前）にスピナーを表示するメッセージ id
   const [streamingAt, setStreamingAt] = useState<string | null>(null);
-  
+
+  /* refs */
   const listRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
+  // メッセージ更新時にスクロール（下部へ）
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // 時:分:秒 形式の時刻文字列を返す（人間側・AI側ともにこれを使用）
+  // 表示用の時刻文字列生成ヘルパー（時:分:秒）
   const now = () =>
     new Date().toLocaleTimeString([], {
       hour: "2-digit",
@@ -167,55 +196,63 @@ export default function ChatPage() {
       hour12: false,
     });
 
+  /**
+   * sendImpl: 実際の送信処理（UI 表示と API 呼び出しの扱いを分離）
+   * - ユーザメッセージを追加
+   * - アシスタント用のプレースホルダを追加してスピナーを表示
+   * - fetch で /api/chat を呼び、ストリーミングがあれば逐次追記する
+   */
   const sendImpl = async (text: string) => {
     const userMsg: Msg = { id: String(Date.now()), role: "user", content: text.trim(), at: now() };
-    // プレースホルダ用のアシスタントIDを先に作り、送信直後に空吹き出しとスピナーを表示する
     const assistantId = String(Date.now() + Math.floor(Math.random() * 1000));
     const assistantPlaceholder: Msg = { id: assistantId, role: "assistant", content: "", at: "" };
-    // クライアント表示用はユーザ→プレースホルダの順で追加
+
+    // ローカル表示用にユーザとプレースホルダを追加
     setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
-    // API へ送る履歴にはプレースホルダを含めない（空の assistant が送られるのを防ぐ）
+
+    // API に送る履歴（ローカル state messages は非同期なので直接参照は慎重に）
+    // ここでは直近の messages を使わず userMsg を含めた配列を組み立てて送る
     const messagesForApi = [...messages, userMsg];
-    setStreamingAt(assistantId); // スピナー表示開始
+
+    setStreamingAt(assistantId);
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: messagesForApi, question: questionParam /* 例: "Q_000001" */ }),
+        body: JSON.stringify({ messages: messagesForApi, question: questionParam }),
       });
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(errText);
       }
- 
-      // ストリーミング対応：body があれば逐次読み出して追記
+
+      // ストリーミング対応：ReadableStream を逐次読み出す処理
       if (res.body) {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        // 最初の到着チャンクを検知するためのフラグ
         let firstChunk = true;
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
-          // 最新のアシスタントメッセージに追記
+          // プレースホルダの content にチャンクを追記
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
           );
-          // 最初の文字が来たらスピナーを消す（人間の返信直後～AI一文字目表示までに spinner）
+          // 最初のチャンク到着時にスピナーを消す
           if (firstChunk) {
             setStreamingAt(null);
             firstChunk = false;
           }
         }
-        // ストリーミング完了時にそのメッセージの時刻を現在時刻（時:分:秒）に更新
+        // ストリーム完了時に時刻を更新
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantId ? { ...m, at: now() } : m))
         );
         setStreamingAt(null);
       } else {
-        // 非ストリーミングの場合はプレースホルダを更新してスピナーを消す
+        // 非ストリーミング応答（JSON or text）
         const data = await res.json();
         const reply = (data?.reply ?? data?.error ?? "（応答なし）").toString();
         setMessages((prev) =>
@@ -224,7 +261,7 @@ export default function ChatPage() {
         setStreamingAt(null);
       }
     } catch (err: any) {
-      // エラー時は既存プレースホルダをエラーメッセージへ置換してスピナーを消す
+      // エラー時はプレースホルダをエラーメッセージに置換
       setStreamingAt(null);
       setMessages((prev) =>
         prev.map((m) =>
@@ -238,6 +275,7 @@ export default function ChatPage() {
     }
   };
 
+  // フォーム送信ハンドラ
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -247,6 +285,7 @@ export default function ChatPage() {
     taRef.current?.focus();
   };
 
+  /* ---------- Composer の高さ同期（CSS 変数に反映） ---------- */
   const syncComposerHeightVar = () => {
     const h = composerRef.current?.offsetHeight ?? 72;
     document.documentElement.style.setProperty("--composer-h", `${h}px`);
@@ -269,28 +308,31 @@ export default function ChatPage() {
     if (taRef.current) autoResize(taRef.current);
   }, [input]);
 
-  // 汎用の確認ダイアログを開く（action: "save" | "discard"）
+  /* ---------- 保存確認ダイアログ制御 ---------- */
   const openConfirm = (action: "save" | "discard" = "save") => {
     setConfirmAction(action);
     setConfirmOpen(true);
   };
 
-  // ConfirmModal の確定時ハンドラ（保存 or 保存せず戻る）
+  // ConfirmModal の「確定」ボタン処理
   const handleConfirm = async () => {
     if (confirmAction === "save") {
-      // 既存の保存処理を再利用
       await confirmAndSave();
       return;
     }
-    // 保存せずに前画面に戻る
     setConfirmOpen(false);
     router.back();
   };
 
+  /**
+   * confirmAndSave:
+   * - テンプレ情報を取得して payload に含める（存在すれば）
+   * - まずは要約なしで即保存（UI ブロックを避ける）
+   * - 保存完了後に非同期で要約生成を依頼
+   */
   const confirmAndSave = async () => {
     setSaving(true);
     try {
-      // 読み込んだテンプレート JSON を取得して payload に含める
       let questionJson: any = null;
       if (questionParam) {
         try {
@@ -307,12 +349,11 @@ export default function ChatPage() {
         }
       }
 
-      // まずは要約無しで素早く保存（UI をブロックしない）
       const payload = {
         exportedAt: new Date().toISOString(),
         messages,
         question: questionJson,
-        summary: null, // まずは null にして即保存
+        summary: null, // 後で生成
       };
       const res = await fetch("/api/save", {
         method: "POST",
@@ -329,7 +370,6 @@ export default function ChatPage() {
         return;
       }
 
-      // 保存完了を即時にユーザーに通知
       setToast({
         open: true,
         type: "success",
@@ -337,15 +377,14 @@ export default function ChatPage() {
       });
       setConfirmOpen(false);
 
-      // --- 要約生成をバックグラウンドで実行（UIは待たない） ---
-      // サーバーに saved filename を渡して、要約を生成しファイルに追記してもらう
+      // バックグラウンドで要約生成をリクエスト（UI を待たない）
       (async () => {
         try {
           await fetch("/api/save-summary", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              file: json.file, // /api/save が返す保存ファイル名
+              file: json.file,
               messages,
               question: questionJson,
             }),
@@ -355,7 +394,6 @@ export default function ChatPage() {
           console.warn("background: save-summary failed", e);
         }
       })();
-      // ---------------------------------------------------------
 
       setTimeout(() => router.push("/"), 900);
     } finally {
@@ -363,26 +401,22 @@ export default function ChatPage() {
     }
   };
 
+  /* ---------- 初期マウント時の自動呼び出し（初期 AI 応答） ---------- */
   useEffect(() => {
-    // 開発時の React.StrictMode による「短時間での副作用二重実行」を防ぐため、
-    // 最終実行時刻をグローバルに記録し、短時間内の重複実行はスキップする。
+    // StrictMode 等での副作用二重実行を抑止する軽量なガード
     if (typeof window !== "undefined") {
       const last = (window as any).__chat_init_last ?? 0;
       const nowTs = Date.now();
-      const SKIP_MS = 1000; // このウィンドウ内での重複実行を何ms以内ならスキップするか
+      const SKIP_MS = 1000;
       if (nowTs - last < SKIP_MS) {
-        // 短時間の重複（Strict Mode の副作用）とみなして実行をスキップ
         return;
       }
-      // 実行する場合は時刻を記録
       (window as any).__chat_init_last = nowTs;
     }
- 
-    // ページ表示後に一度だけ API を呼ぶ（ストリーミング対応）。初期表示でも spinner を出す
+
     const runOnMount = async () => {
       try {
         setLoading(true);
-        // プレースホルダを先に追加して spinner を表示
         const assistantId = String(Date.now() + Math.floor(Math.random() * 1000));
         setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", at: "" }]);
         setStreamingAt(assistantId);
@@ -449,6 +483,7 @@ export default function ChatPage() {
     runOnMount();
   }, []);
 
+  /* ---------- JSX: レイアウトと表示 ---------- */
   return (
     <div className={styles.wrap}>
       <header className={styles.header} style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -467,7 +502,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* 右下（ヘッダ下底）：アクションボタンを配置 */}
+        {/* 右下（ヘッダ下底）：アクションボタン群 */}
         <div className={styles.headerActions} style={{ marginLeft: "auto", alignItems: "center", gap: 10 }}>
           <button
             className={styles.btnGhost}
@@ -487,11 +522,10 @@ export default function ChatPage() {
         </div>
       </header>
 
+      {/* メッセージリスト */}
       <div
         ref={listRef}
-        className={`${styles.list} ${
-          messages.length === 0 ? styles.listEmpty : ""
-        }`}
+        className={`${styles.list} ${messages.length === 0 ? styles.listEmpty : ""}`}
       >
         {messages.length === 0 ? (
           <div className={styles.empty}>メッセージを入力して開始してください。</div>
@@ -500,7 +534,7 @@ export default function ChatPage() {
            const mine = m.role === "user";
            return (
               <div
-                key={m.id} /* 修正：インデックスではなく id をキーにする */
+                key={m.id} /* id をキーにすることで安定した再レンダリング */
                 className={`${styles.row} ${mine ? styles.me : styles.ai}`}
               >
                 {!mine && (
@@ -508,21 +542,15 @@ export default function ChatPage() {
                     <img className={styles.myIcon} src="/ai.png" alt="AI" />
                   </div>
                 )}
-                <div
-                  className={`${styles.bubble} ${
-                    mine ? styles.meBubble : styles.aiBubble
-                  }`}
-                >
+                <div className={`${styles.bubble} ${mine ? styles.meBubble : styles.aiBubble}`}>
                   <div className={styles.text}>{m.content}</div>
-                  {/* streamingAt と一致するメッセージ（＝まだAIの最初の文字が来ていない吹き出し）にスピナーを表示 */}
+
+                  {/* streamingAt と一致するメッセージにスピナー表示 */}
                   {!mine && m.id === streamingAt && (
                     <span className={styles.spinner} aria-hidden="true" />
                   )}
-                  <div
-                    className={`${styles.meta} ${
-                      mine ? styles.meMeta : styles.aiMeta
-                    }`}
-                  >
+
+                  <div className={`${styles.meta} ${mine ? styles.meMeta : styles.aiMeta}`}>
                     <span className={styles.time}>{m.at}</span>
                     {mine && <span className={styles.read}>既読</span>}
                   </div>
@@ -538,6 +566,7 @@ export default function ChatPage() {
         )}
       </div>
 
+      {/* Composer（入力エリア） */}
       <form ref={composerRef} className={styles.composer} onSubmit={onSubmit}>
         <div className={styles.avatar}>
           <img src="/me.png" alt="Me" className={styles.myIcon} />
@@ -567,6 +596,7 @@ export default function ChatPage() {
         </button>
       </form>
 
+      {/* 確認ダイアログと通知 */}
       <ConfirmModal
         open={confirmOpen}
         title={confirmAction === "save" ? "本当に保存して終了しますか？" : "保存せずに終了しますか？"}

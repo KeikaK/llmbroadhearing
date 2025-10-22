@@ -1,4 +1,11 @@
-/* テンプレ管理ボタン：フラットな紫→赤グラデーション */
+/* page.module.css
+   - アプリ共通のページスタイル（セッション一覧・回答カード・セッションページ等で利用）
+   - このファイルは CSS Modules で読み込まれることを想定しています。
+   - 各クラスはローカルスコープ化されます（:global を使用していない限りグローバル影響は少ない）。
+   - 変更する際はクラス名を TSX 側と合わせてください。 */
+
+/* テンプレ管理ボタン：フラットな紫→赤グラデーション
+   - 管理者向けの強調ボタン。アクセシビリティ対応（フォーカスリング）あり。 */
 .adminBtn{
   padding: 10px 14px;
   border-radius: 10px;
@@ -16,28 +23,24 @@
   box-shadow: none; /* フラットデザイン */
 }
 
-/* ホバーで少し濃く（浮き上がり無し） */
+/* ホバー・アクティブ・フォーカスの視覚フィードバック */
 .adminBtn:hover{
   background: linear-gradient(90deg, #6b21d8 0%, #dc2626 100%);
   opacity: 0.98;
 }
-
-/* 押下時のフィードバック：やや暗く */
 .adminBtn:active{
   background: linear-gradient(90deg, #581cbe 0%, #b91c1c 100%);
   opacity: 0.95;
 }
-
-/* キーボードフォーカス対応（アクセシブルなリング） */
 .adminBtn:focus{
   outline: 3px solid rgba(199, 46, 46, 0.18);
   outline-offset: 4px;
 }
-
-/* リンク内のデフォルトスタイル除去（念のため） */
+/* リンク内で使用する場合のデフォルト装飾除去（安全策） */
 :global(a) > .adminBtn { text-decoration: none; }
 
-/* レイアウト */
+/* ===== レイアウト基礎 ===== */
+/* ページのラッパー。高さと背景色を指定 */
 .main {
   min-height: 100svh;
   background: #eef2f6;
@@ -48,13 +51,15 @@
   margin: 0 auto;
 }
 
-/* ヘッダ */
+/* ===== ヘッダ ===== */
+/* ヘッダ全体のレイアウト（タイトルとアクション） */
 .header {
   padding: 8px 12px 18px;
   display: flex;
   align-items: center;
   gap: 12px;
 }
+/* メインタイトル（グラデーションテキスト） */
 .title {
   margin: 0;
   font-size: 40px;
@@ -66,7 +71,7 @@
   color: transparent;
 }
 
-/* 区切り線 */
+/* 区切り線（軽いボーダー） */
 .hr {
   border: none;
   border-top: 1px solid rgba(15,23,42,0.06);
@@ -78,7 +83,8 @@
   margin: 22px 0;
 }
 
-/* ヒアリング一覧 */
+/* ===== ヒアリング一覧 (Questions) ===== */
+/* セクションのグリッドレイアウト */
 .sectionGrid {
   display: grid;
   grid-template-columns: 160px 1fr;
@@ -92,6 +98,7 @@
   padding-top: 6px;
 }
 .questionsPanel { grid-column: 1 / -1; }
+/* カードのグリッド（一覧表示） */
 .questionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(220px, 1fr));
@@ -107,13 +114,17 @@
   color: #9ca3af;
 }
 
-/* カード */
+/* ===== カード共通 ===== */
+/* リンクをブロック化してカード全体をクリック可能に */
 .cardLink { display: block; text-decoration: none; color: inherit; }
+/* トランスフォーム用の最適化とトランジションを共通化 */
 .questionCard, .sessionCard {
   will-change: transform, box-shadow;
   transition: transform .16s cubic-bezier(.2,.9,.2,1), box-shadow .16s cubic-bezier(.2,.9,.2,1), border-color .12s ease;
   cursor: pointer;
 }
+
+/* ヒアリングカード（緑系） */
 .questionCard{
   padding: 20px;
   border-radius: 16px;
@@ -130,6 +141,7 @@
   overflow: hidden;
   transition: transform .16s ease, box-shadow .16s ease;
 }
+/* 左アクセント（緑） */
 .questionAccent {
   border-left: 8px solid #059669;
   padding-left: 16px;
@@ -157,7 +169,8 @@
   color: #065f46;
 }
 
-/* 回答セクション */
+/* ===== 回答（セッション）セクション ===== */
+/* 回答領域全体のカード（青系） */
 .sessionSection{
   background: linear-gradient(180deg,#f2f9ff,#fff);
   border-radius: 12px;
@@ -178,6 +191,7 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
 }
+/* 回答カード（青系・セッション一覧と共通化） */
 .sessionCard{
   padding: 14px;
   border-radius: 12px;
@@ -194,6 +208,7 @@
   /* 安定したレンダリングのためバックグラウンド等を明示 */
   background-clip: padding-box;
 }
+/* 回答カードの左アクセント（青） */
 .sessionAccent {
   border-left: 6px solid #06a6ff;
   padding-left: 12px;
@@ -203,15 +218,17 @@
 .sessionSummary{ font-size: 13px; color: #08303b; margin-top: 8px; line-height: 1.4; flex: 1; overflow: hidden; text-overflow: ellipsis; }
 .sessionModel{ font-size: 12px; color: #3b82f6; margin-top: 8px; }
 
-/* actions area */
+/* アクション群（右寄せ） */
 .actionsWrap{ display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
 .linkReset{ text-decoration:none; }
 
-/* セッションページ：JSON 折りたたみ表示 */
+/* ===== セッションページ用：JSON 表示・メタ情報 ===== */
+/* 折りたたみ表示の summary を見やすくする */
 .jsonDump summary {
   list-style: none;
   outline: none;
 }
+/* 古い jsonPre 用定義（軽めの背景） */
 .jsonPre {
   background: #0f172a0a; /* 薄いグレー背景 */
   padding: 12px;
@@ -225,7 +242,7 @@
   font-size: 13px;
 }
 
-/* セッションページ：メタ情報グリッド */
+/* メタ情報グリッド（キー/値を分かりやすく表示） */
 .metaGrid {
   background: linear-gradient(180deg, rgba(240,249,255,0.9), rgba(250,254,255,0.85));
   border: 1px solid rgba(14,93,230,0.06);
@@ -242,6 +259,7 @@
   flex-direction: column;
   gap: 8px;
 }
+/* 各行を2カラムで整列 */
 .kvRow {
   display: grid;
   grid-template-columns: 160px 1fr;
@@ -262,7 +280,7 @@
   font-size: 13px;
 }
 
-/* JSON 表示プリフォーマット */
+/* JSON 表示（補正済みプリスタイル） */
 .jsonPre {
   background: #f8f7f6;
   padding: 10px;
@@ -276,7 +294,7 @@
   font-size: 13px;
 }
 
-/* messages 個別行（既存会話スタイルと合わせる） */
+/* messages 個別行（折りたたみ表示等） */
 .messageDetails > details {
   margin-bottom: 10px;
 }
@@ -286,6 +304,7 @@
   color: #2b0f0f;
 }
 
+/* ===== インタラクション（ホバー時の浮き上がり） ===== */
 /* Link の hover / focus で子カードを浮かせる（優先度を高める） */
 .cardLink:hover .sessionCard,
 .cardLink:focus-visible .sessionCard {
@@ -293,13 +312,11 @@
   box-shadow: 0 18px 44px rgba(6,106,255,0.12), 0 6px 18px rgba(6,106,255,0.06);
   border-color: rgba(6,106,255,0.12);
 }
-
-/* 追加の安全策：より高い優先度でホバーを強制（必要ならコメントアウト） */
+/* より高い優先度で強制するセレクタ（互換性対策） */
 .cardLink:hover > .sessionCard,
 .cardLink:focus-visible > .sessionCard {
   will-change: transform, box-shadow;
 }
-
 /* ホバーでカード全体の境界色を変えているが、左アクセントは変えない */
 .cardLink:hover .sessionCard.sessionAccent,
 .cardLink:focus-visible .sessionCard.sessionAccent {
@@ -309,7 +326,8 @@
   border-image: none;
 }
 
-/* セッションページ：ヘッダ右側のメタ行 */
+/* ===== セッションページ：ヘッダ右側のメタ行 ===== */
+/* sessionHeader の中で sessionMetaRow を整列するための補助スタイル */
 .sessionHeader .sessionMetaRow {
   display: flex;
   gap: 12px;
@@ -329,7 +347,8 @@
   border-radius: 8px;
 }
 
-/* セッション本文のラッパー */
+/* ===== セッション本文ラッパー ===== */
+/* 中央揃えと最大幅を設定 */
 .sessionContentWrap { max-width: 1100px; margin: 0 auto; }
 .sessionContentCard {
   background: #fff;
@@ -338,7 +357,7 @@
   box-shadow: 0 18px 40px rgba(11,7,7,0.04);
 }
 
-/* 会話表示（クラス化） */
+/* ===== 会話用スタイル ===== */
 .conversationWrap { display:flex; flex-direction:column; gap:12px; }
 .msgRowUser { display:flex; justify-content:flex-end; }
 .msgRowAssistant { display:flex; justify-content:flex-start; }
@@ -364,9 +383,13 @@
 .msgText { white-space: pre-wrap; line-height: 1.5; }
 .msgTime { font-size:11px; color: rgba(43,12,12,0.45); margin-top:8px; }
 
-/* JSON プリ要素の余白調整 */
+/* JSON 折りたたみ内プリ要素のマージン調整 */
 .jsonDump > .jsonPre { margin-top: 10px; }
 
-/* デバッグ用の視覚化（適宜削除） */
-/* 変更: 単独の属性セレクタは許可されないため、ローカルクラスと組み合わせる */
+/* デバッグ用：属性セレクタは CSS Modules の制約上単独で使えないためローカルクラスと併用 */
 .sessionCard[data-debug="session-card"] { outline: none; }
+
+/* ===== ここまで =====
+   - 必要であれば各セクションごとに色や余白を微調整します。
+   - グローバルな body 背景を上書きしたい場合は各ページの .main クラスで調整してください。
+*/
