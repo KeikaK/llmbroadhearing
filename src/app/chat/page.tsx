@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
+import SimpleMarkdown from "../../components/SimpleMarkdown";
 
 /**
  * Msg 型
@@ -543,7 +544,7 @@ export default function ChatPage() {
                   </div>
                 )}
                 <div className={`${styles.bubble} ${mine ? styles.meBubble : styles.aiBubble}`}>
-                  <div className={styles.text}>{m.content}</div>
+                  <SimpleMarkdown content={m.content} className={styles.text} />
 
                   {/* streamingAt と一致するメッセージにスピナー表示 */}
                   {!mine && m.id === streamingAt && (

@@ -38,7 +38,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ja" translate="no">
+      <head>
+        <meta name="google" content="notranslate" />
+      </head>
       {/* フォント変数を body に適用し、アンチエイリアスを有効化 */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -158,9 +158,12 @@ export default function QuestionsAdmin() {
     setQuestionIdField("");
   }
 
-  // 保存確認モーダル表示（選択がない場合は警告）
+  // 保存確認モーダル表示（選択がない場合はエラー表示に変更）
   function openSaveConfirm() {
-    if (!selected) return alert("テンプレートを選択してください");
+    if (!selected) {
+      setErrorMsg("テンプレートを選択してください");
+      return;
+    }
     setShowSaveConfirm(true);
   }
 
@@ -179,29 +182,37 @@ export default function QuestionsAdmin() {
       setSaveMessage("保存しました");
       setShowSaveSuccess(true);
     } catch (e: any) {
-      alert("保存エラー: " + String(e));
+      // ブラウザ alert を使わず画面内にエラーメッセージを表示
+      setErrorMsg("保存エラー: " + String(e));
     } finally {
       setLoading(false);
     }
   }
 
-  // 削除確認を開く（選択チェック）
+  // 削除確認を開く（選択チェック） — alert を errorMsg に置き換え
   function openDeleteConfirm() {
-    if (!selected) return alert("テンプレートを選択してください");
+    if (!selected) {
+      setErrorMsg("テンプレートを選択してください");
+      return;
+    }
     setShowDeleteConfirm(true);
   }
 
-  // 削除確定処理（DELETE）
+  // 削除確定処理（DELETE） — 成功はモーダルで通知、失敗は errorMsg
   async function handleConfirmDelete() {
     setShowDeleteConfirm(false);
     if (!selected) return;
     try {
       const res = await fetch(`/api/questions/${encodeURIComponent(selected)}`, { method: "DELETE" });
-      if (!res.ok) { alert("削除失敗"); return; }
-      alert("削除しました");
-      location.reload(); // 簡易リロードで一覧反映
+      if (!res.ok) {
+        setErrorMsg("削除失敗");
+        return;
+      }
+      // ブラウザ alert の代わりに既存の保存モーダルを流用して通知
+      setSaveMessage("削除しました");
+      setShowSaveSuccess(true);
     } catch (e: any) {
-      alert("削除エラー: " + String(e));
+      setErrorMsg("削除エラー: " + String(e));
     }
   }
 

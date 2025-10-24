@@ -1,0 +1,19 @@
+/* 強調（太字）箇所を目立たせるスタイル（ピンク蛍光下線、2重レイヤー） */
+.gradientBold {
+  font-weight: 900;
+  display: inline-block;
+  line-height: inherit;
+  padding: 0 6px 0.06em 6px; /* 下に少し余裕を作る */
+  border-radius: 4px;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* テキストの可読性確保（pseudo 要素の背面に配置） */
+.gradientBold > * {
+  position: relative;
+  z-index: 0;
+}
+

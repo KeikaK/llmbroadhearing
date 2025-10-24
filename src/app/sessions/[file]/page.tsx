@@ -3,6 +3,9 @@ import styles from "./page.module.css";
 import type { SessionFile, Message } from "../../../types/session";
 import { readSessionFile, ensureJsonFilename } from "../../../lib/session";
 
+// 追加: SimpleMarkdown を読み込んで ** or __ で囲まれた部分を太字に変換して表示する
+import SimpleMarkdown from "../../../components/SimpleMarkdown";
+
 export default async function SessionPage({ params }: { params: any }) {
   const { file: rawFile } = await params;
   const safeFile = String(rawFile ?? "");
@@ -117,7 +120,8 @@ export default async function SessionPage({ params }: { params: any }) {
                       return (
                         <div key={i} className={isUser ? styles.msgRowUser : styles.msgRowAssistant}>
                           <div className={isUser ? styles.msgBubbleUser : styles.msgBubbleAssistant}>
-                            <div className={styles.msgText}>{content}</div>
+                            {/* 最終表示時に SimpleMarkdown を使い ** または __ で囲まれた箇所を太字に変換 */}
+                            <SimpleMarkdown content={content} className={styles.msgText} />
                             {m.time && <div className={styles.msgTime}>{new Date(m.time).toLocaleString()}</div>}
                           </div>
                         </div>
