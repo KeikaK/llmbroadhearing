@@ -55,17 +55,21 @@
 
 /* メッセージリスト領域：ヘッダと composer のスペースを考慮したパディング */
 .list {
+  position: absolute;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  bottom: var(--composer-h);
   padding: 16px 20px;
-  padding-top: calc(16px + var(--header-h));
-  padding-bottom: calc(24px + var(--composer-h));
-  height: calc(100vh - var(--header-h) - var(--composer-h));
-  overflow-y: auto; background: var(--bg);
+  overflow-y: auto;
+  background: var(--bg);
+  box-sizing: border-box; /* パディングを含めた高さ計算にする */
 }
 .listEmpty { display: flex; align-items: center; justify-content: center; }
 .empty { color: var(--muted); }
 
 /* メッセージ行の配置：AI と自分で左右寄せ */
-.row { display: flex; gap: 10px; margin: 10px 0; align-items: flex-end; }
+.row { display: flex; gap: 10px; margin: 6px 0; align-items: flex-end; }
 .ai { justify-content: flex-start; }
 .me { justify-content: flex-end; }
 
@@ -89,10 +93,28 @@
 }
 
 /* 吹き出し：最大幅とパディングを指定 */
-.bubble { max-width: 60%; padding: 10px 12px; border-radius: 16px; }
+.bubble {
+  position: relative;
+  display: inline-block;
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 20px rgba(2,6,23,0.06);
+  line-height: 1.45;
+  word-break: break-word;
+  max-width: 72%;
+}
 /* AI と自分で色分け */
-.aiBubble { background: #fff; border: 1px solid var(--border); color: var(--text); } /* AI返信の文字色を濃くする */
-.meBubble { background: var(--green); color: #fff; }
+.aiBubble {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.meBubble {
+  background: var(--green);
+  color: #fff;
+  border: 1px solid rgba(3,145,63,0.12);
+  max-width: 70%;
+}
 .text { white-space: pre-wrap; }
 /* メタ情報（タイムスタンプ等） */
 .meta { font-size: 12px; opacity: .8; display: flex; gap: 8px; justify-content: flex-end; }
@@ -373,3 +395,61 @@
   /* 背景に応じて視認性が悪ければ下記のコメントアウトを外して微かな影を付けてください */
   text-shadow: 0 1px 2px rgba(0,0,0,0.25); 
 }
+
+/* チャット領域の余白調整：メッセージ領域を伸縮/スクロールにして下部の不自然な空白を消す */
+/* 変更: main を :global(main) に、ルート周りを :global(...) に変更 */
+:global(:root), :global(html), :global(body), :global(#__next) {
+  height: 100%;
+}
+
+.container, .chatRoot, :global(main), .chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0; /* 子要素の overflow を有効にするため必須 */
+}
+
+/* メッセージ領域を伸縮させスクロールが効くように */
+.conversationWrap,
+.messages,
+.chatMessages,
+.messagesList {
+  flex: 1 1 auto;
+  min-height: 0; /* これが無いと overflow が効かない */
+  overflow: auto;
+  padding-bottom: 8px; /* 入力欄と重ならない最低限の余白のみ */
+}
+
+/* 不要に大きい下マージンを抑える（最後の要素含む） */
+.conversationWrap > * {
+  margin-bottom: 6px;
+}
+.conversationWrap > :last-child {
+  margin-bottom: 6px;
+}
+
+/* メッセージバブルや行の余白を縮める */
+.msgRow, .msgBubble, .msgBubbleUser, .msgBubbleAssistant {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  padding-bottom: 0;
+}
+
+/* 入力欄（composer）は固定して伸びないように */
+.inputWrap, .composer, .chatComposer, .chatInputArea {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 12px; /* 必要に応じて微調整 */
+}
+
+/* 不要な pseudo 要素や空ブロックが原因の可能性があるので高さ固定の空要素をリセット */
+.conversationWrap::after, .messages::after {
+  content: "";
+  display: block;
+  height: 0;
+}
+
+/* もし特定要素が大きな高さを持っているなら目に見えるようにボーダーで検査（デバッグ時のみ） */
+/*
+.conversationWrap * { outline: 0px solid rgba(255,0,0,0.0); }
+*/

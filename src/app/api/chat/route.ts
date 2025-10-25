@@ -145,23 +145,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e?.message ?? "Unknown error" }, { status: 500 });
   }
 }
-
-/*
-  追加: 環境変数にプロキシが設定されていれば global-agent を bootstrap して
-  Node の HTTP/HTTPS グローバルエージェント経由で外部通信をプロキシする。
-  環境変数名は OPENAI_PROXY を優先、その後 HTTP_PROXY/HTTPS_PROXY を参照する。
-*/
-if (typeof process !== "undefined") {
-  const proxy = process.env.OPENAI_PROXY ?? process.env.HTTP_PROXY ?? process.env.HTTPS_PROXY ?? "";
-  if (proxy) {
-    // global-agent を使って global Agent を差し替える（require を使うことで ESM/ CJS 環境で動作しやすくする）
-    try {
-      process.env.GLOBAL_AGENT_HTTP_PROXY = proxy;
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      require("global-agent").bootstrap();
-      console.log("[proxy] global-agent bootstrapped, proxy:", proxy);
-    } catch (err) {
-      console.warn("[proxy] failed to bootstrap global-agent, please install it: npm i global-agent", err);
-    }
-  }
-}

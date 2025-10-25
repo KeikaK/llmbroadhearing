@@ -100,18 +100,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, message: e?.message ?? String(e) }, { status: 500 });
   }
 }
-
-/* 同様に save-summary の route 先頭にも挿入 */
-if (typeof process !== "undefined") {
-  const proxy = process.env.OPENAI_PROXY ?? process.env.HTTP_PROXY ?? process.env.HTTPS_PROXY ?? "";
-  if (proxy) {
-    try {
-      process.env.GLOBAL_AGENT_HTTP_PROXY = proxy;
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      require("global-agent").bootstrap();
-      console.log("[proxy] global-agent bootstrapped, proxy:", proxy);
-    } catch (err) {
-      console.warn("[proxy] failed to bootstrap global-agent, please install it: npm i global-agent", err);
-    }
-  }
-}
